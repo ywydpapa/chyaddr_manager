@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(사)충효예대학 원우관리 시스템 - 로그인</title>
+    <!-- Tailwind CSS CDN을 사용하여 빠르고 깔끔한 UI 구성 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">충효예대학 원우관리 시스템</h1>
+            <p class="text-sm text-gray-500 mt-2">계정 정보를 입력하여 로그인하세요.</p>
+        </div>
+
+        <!-- FastAPI에서 전달받은 error 메시지가 있을 경우 출력 -->
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6 text-sm" role="alert">
+            <span class="block sm:inline">{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- 로그인 폼 (main.py의 Form(...) 파라미터와 name 속성 일치) -->
+        <form action="/loginset" method="POST">
+            <div class="mb-4">
+                <label for="username" class="block text-gray-700 text-sm font-bold mb-2">아이디</label>
+                <input type="text" id="username" name="username" required placeholder="아이디를 입력하세요"
+                       class="shadow-sm appearance-none border rounded w-full py-2.5 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <div class="mb-6">
+                <label for="password" class="block text-gray-700 text-sm font-bold mb-2">비밀번호</label>
+                <input type="password" id="password" name="password" required placeholder="비밀번호를 입력하세요"
+                       class="shadow-sm appearance-none border rounded w-full py-2.5 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                    로그인
+                </button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

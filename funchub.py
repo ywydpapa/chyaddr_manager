@@ -1,65 +1,126 @@
 import os
 import io
-import secrets
 import datetime
-import calendar
-from datetime import date
-import bcrypt
-import jwt
-from PIL import Image
-from fastapi import HTTPException, Request, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
+import hashlib
+import hmac
+import secrets
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import text
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
+from firebase_admin import messaging
+from passlib.exc import UnknownHashError
+import jwt
+import dotenv
 
-# ==========================================
-# 상수 및 디렉토리 설정
-# ==========================================
-MAX_UPLOAD_SIZE = 25 * 1024 * 1024
-THUMBNAIL_DIR = "./static/img/memberThumb"
-MEMBERPHOTO_DIR = "./static/img/members"
-CLUBLOGOS_DIR = "./static/img/clubLogos"
-GOVLOGOS_DIR = "./static/img/govLogos"
-EVENTPHOTO_DIR = "./static/img/event"
-DOCPHOTO_DIR = "./static/img/docs"
+dotenv.load_dotenv()
 
-# ==========================================
-# 유틸리티 함수
-# ==========================================
-def currency(value, symbol="₩", suffix="", places=0):
-    if value is None or value == "":
-        return ""
+# 상수 설정
+MPHOTO_DIR = "./static/img/members"
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "my_super_secret_mobile_key_1234!")
+ALGORITHM = "HS256"
+
+_PBKDF2_ALGORITHM = "pbkdf2_sha256"
+_PBKDF2_ITERATIONS = 210_000
+_PBKDF2_SALT_BYTES = 16
+_PBKDF2_KEY_BYTES = 32
+
+
+def get_password_hash(password: str):
+    if not isinstance(password, str):
+        raise TypeError("password must be a string")
+    salt = secrets.token_bytes(_PBKDF2_SALT_BYTES)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt,
+        _PBKDF2_ITERATIONS,
+        dklen=_PBKDF2_KEY_BYTES,
+    )
+    return f"{_PBKDF2_ALGORITHM}${_PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+
+def verify_password(plain_password: str, hashed_password: str):
+    if not isinstance(plain_password, str) or not isinstance(hashed_password, str):
+        return False
+    if hashed_password.startswith(f"{_PBKDF2_ALGORITHM}$"):
+        try:
+            _, iterations_str, salt_hex, digest_hex = hashed_password.split("$", 3)
+            iterations = int(iterations_str)
+            salt = bytes.fromhex(salt_hex)
+            expected_digest = bytes.fromhex(digest_hex)
+            actual_digest = hashlib.pbkdf2_hmac(
+                "sha256",
+                plain_password.encode("utf-8"),
+                salt,
+                iterations,
+                dklen=len(expected_digest),
+            )
+            return hmac.compare_digest(actual_digest, expected_digest)
+        except Exception:
+            return False
     try:
-        n = float(value)
-    except (TypeError, ValueError):
-        return value
-    if places == 0:
-        formatted = f"{int(round(n)):,}"
-    else:
-        formatted = f"{n:,.{places}f}"
-    return f"{symbol}{formatted}{suffix}"
+        from passlib.context import CryptContext
+        legacy_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+        return legacy_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
-# 토큰 검증 함수 (API 호출 시마다 실행됨)
-async def get_current_mobile_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+
+async def get_classlist(db: AsyncSession):
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        memberno: str = payload.get("sub")
-        if memberno is None:
-            raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
-        return memberno
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="토큰이 만료되었습니다. 다시 로그인해주세요.")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="잘못된 토큰입니다.")
+        query = text("SELECT * FROM chyClass where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
 
 
-# 데이터베이스 세션 생성
-async def get_db():
-    async with async_session() as session:
-        yield session
+async def get_memberlist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyMembers where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MEMBER_LIST)")
 
 
-@app.get("/favicon.ico")
-async def favicon():
-    return {"detail": "Favicon is served at /static/favicon.ico"}
+async def get_ranklist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyRank where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(RANK_LIST)")
+
+
+async def get_classlist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyClass where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
+
+
+async def get_rankdetail(db: AsyncSession, rankno: int):
+    try:
+        query = text("SELECT * FROM chyRank where rankNo = :rankno")
+        result = await db.execute(query, {"rankno": rankno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(RANK_DETAIL)")
+
+
+async def get_classdetail(db: AsyncSession, classno: int):
+    try:
+        query = text("SELECT * FROM chyClass where classNo = :classno")
+        result = await db.execute(query, {"classno": classno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CLASS_DETAIL)")
+
+
