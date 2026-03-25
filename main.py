@@ -183,6 +183,20 @@ async def rankList(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request, "rank_list": rank_list })
 
 
+@app.get("/memberList", response_class=HTMLResponse)
+async def memberList(request: Request, db: AsyncSession = Depends(get_db)):
+    member_list = await funchub.get_memberlist(db)
+    return templates.TemplateResponse("mst/mst_member.html", {
+        "request": request, "member_list": member_list })
+
+
+@app.get("/categoryList", response_class=HTMLResponse)
+async def categoryList(request: Request, db: AsyncSession = Depends(get_db)):
+    category_list = await funchub.get_catgorylist(db)
+    return templates.TemplateResponse("mst/mst_category.html", {
+        "request": request, "category_list": category_list })
+
+
 @app.get("/add_rank", response_class=HTMLResponse)
 async def add_rank(request: Request, db: AsyncSession = Depends(get_db)):
     query = text(
@@ -191,6 +205,26 @@ async def add_rank(request: Request, db: AsyncSession = Depends(get_db)):
                      {"rankTitlekor": "새로 등록된 직책", "rankTitleeng": "New Rank", "rankType": "CLASS", "orderNo": "0"})
     await db.commit()
     return RedirectResponse(f"/rankList", status_code=303)
+
+
+@app.get("/add_category", response_class=HTMLResponse)
+async def add_catgory(request: Request, db: AsyncSession = Depends(get_db)):
+    query = text(
+        "INSERT INTO chyCategory (catTitle, catTitleEng, catType, useYn) values (:catTitlekor, :catTitleeng, :catType, :useYn)")
+    await db.execute(query,
+                     {"catTitlekor": "새로 등록된 카테고리", "catTitleeng": "New Category", "catType": "MBIFO", "useYn": "Y"})
+    await db.commit()
+    return RedirectResponse(f"/categoryList", status_code=303)
+
+
+@app.get("/add_member", response_class=HTMLResponse)
+async def add_member(request: Request, db: AsyncSession = Depends(get_db)):
+    query = text(
+        "INSERT INTO chyMember (memberName, memberMF) values (:membername, :membermf)")
+    await db.execute(query,
+                     {"membername": "새로 등록된 회원", "membermf": "M"})
+    await db.commit()
+    return RedirectResponse(f"/memberList", status_code=303)
 
 
 @app.get("/add_class", response_class=HTMLResponse)
@@ -212,7 +246,7 @@ async def update_rank(request: Request, rankno: int, db: AsyncSession = Depends(
     query = text("UPDATE chyRank SET rankTitlekor = :rankTitlekor, rankTitleeng = :rankTitleeng, rankType = :rankType, sortNo = :sortNo, useYN = :useYN WHERE rankNo = :rankNo")
     await db.execute(query, data4update)
     await db.commit()
-    return RedirectResponse(f"/rankDetail/{rankno}", status_code=303)
+    return RedirectResponse(f"/rankDetail/{rankno}?msg=success", status_code=303)
 
 
 @app.post("/update_class/{classno}", response_class=HTMLResponse)
@@ -224,7 +258,19 @@ async def update_class(request: Request, classno: int, db: AsyncSession = Depend
     query = text("UPDATE chyClass SET classTitle = :classTitle, classFrom = :classFrom, classTo = :classTo WHERE classNo = :classNo")
     await db.execute(query, data4update)
     await db.commit()
-    return RedirectResponse(f"/classDetail/{classno}", status_code=303)
+    return RedirectResponse(f"/classDetail/{classno}?msg=success", status_code=303)
+
+
+@app.post("/update_category/{catno}", response_class=HTMLResponse)
+async def update_category(request: Request, catno: int, db: AsyncSession = Depends(get_db)):
+    form_data = await request.form()
+    data4update = {
+        "catNo": catno, "catTitle": form_data.get("cattitle"), "catTitleEng": form_data.get("cattitleeng"),
+        "catType": form_data.get("cattype"), "useYN": form_data.get("useyn"),}
+    query = text("UPDATE chyCategory SET catTitle = :catTitle, catTitleEng = :catTitleEng, catType = :catType, useYN = :useYN, modDate = NOW() WHERE catNo = :catNo")
+    await db.execute(query, data4update)
+    await db.commit()
+    return RedirectResponse(f"/categoryDetail/{catno}?msg=success", status_code=303)
 
 
 @app.get("/rankDetail/{rankno}", response_class=HTMLResponse)
@@ -244,3 +290,16 @@ async def classList(request: Request, db: AsyncSession = Depends(get_db)):
 async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     class_detail = await funchub.get_classdetail(db, classno)
     return templates.TemplateResponse("mst/edit_class.html", { "request": request, "class_dtl": class_detail })
+
+
+@app.get("/categoryDetail/{catno}", response_class=HTMLResponse)
+async def category_detail(request: Request, catno: int, db: AsyncSession = Depends(get_db)):
+    category_detail = await funchub.get_categorydetail(db, catno)
+    return templates.TemplateResponse("mst/edit_category.html", { "request": request, "category_dtl": category_detail })
+
+
+@app.get("/memberDetail/{memberno}", response_class=HTMLResponse)
+async def member_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
+    member_detail = await funchub.get_memberdetail(db, memberno)
+    categories = await funchub.get_categorybytype(db, 'MBIFO')
+    return templates.TemplateResponse("mst/edit_member.html", { "request": request, "member_dtl": member_detail })

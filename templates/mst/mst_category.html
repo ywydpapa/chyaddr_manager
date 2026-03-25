@@ -28,26 +28,24 @@
             <div class="container-fluid">
                 <!-- Page Heading -->
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4 class="h3 mb-4 text-gray-800">회원 관리</h4>
-                    <a href="/add_member" class="btn btn-primary" id="newmember" role="button" style="flex: 0 0 auto;">회원추가</a>
+                    <h4 class="h3 mb-4 text-gray-800">회원 정보 카테고리 관리</h4>
+                    <a href="/add_category" class="btn btn-primary" id="newmember" role="button" style="flex: 0 0 auto;">카테고리 추가</a>
                 </div>
                 <div>
                     <div style="float:right"></div>
-                    <table class="table" id="memberlist">
+                    <table class="table" id="ranklist">
                         <thead style="text-align: center">
-                        <th>회원번호</th>
-                        <th>성명</th>
-                        <th>성별</th>
-                        <th>아이디</th>
-                        <th>활동여부</th>
+                        <th>한글명칭</th>
+                        <th>영문명칙</th>
+                        <th>구분</th>
+                        <th>사용여부</th>
                         </thead>
-                        {% for member in member_list %}
+                        {% for row in category_list %}
                         <tr style="text-align: center">
-                            <td>{{ member[0] }}</td>
-                            <td><a href="/memberDetail/{{member[0]}}">{{ member[1] }}</a></td>
-                            <td>{{ member[4] }}</td>
-                            <td>{{ member[5] }}</td>
-                            <td>{{ member[8] }}</td>
+                            <td><a href="/categoryDetail/{{row[0]}}">{{ row[1] }}</a></td>
+                            <td><a href="/categoryDetail/{{row[0]}}">{{ row[2] }}</a></td>
+                            <td>{{ row[4] }}</td>
+                            <td>{{ row[5] }}</td>
                         </tr>
                         {% endfor %}
                     </table>
@@ -90,7 +88,7 @@
 {% include 'common/adscript.html' %}
 <script>
     $(document).ready(function () {
-        $('#memberlist').DataTable({
+        $('#ranklist').DataTable({
             "pageLength": 25,
             order: [[3, "asc"]]
         });

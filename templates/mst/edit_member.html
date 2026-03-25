@@ -1,87 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
-
     <title>충효예대학 원우관리</title>
-
     <!-- Custom fonts for this template-->
     <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-        rel="stylesheet">
-
+            href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+            rel="stylesheet">
     <!-- Custom styles for this template-->
     <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        #popup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
 
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+
+            /* 비율 기반 크기 */
+            width: 50vw; /* 가로 비율 */
+            height: 50vh; /* 세로 비율 */
+
+            background: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* 닫기 버튼 영역을 고정 높이로 만들고 iframe 높이를 계산 */
+        #popup-header {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 6px 10px;
+            border-bottom: 1px solid #eee;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        #popup-close {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        #popup iframe {
+            width: 100%;
+            height: calc(100% - 44px);
+            border: 0;
+            display: block;
+        }
+    </style>
+
+    <style>
+        #imagePreview {
+            display: none; /* 기본적으로 숨김 */
+            max-width: 200px; /* 최대 너비 설정 */
+            max-height: 250px; /* 최대 높이 설정 */
+            margin-top: 10px;
+        }
+
+        .image-container {
+            display: flex; /* 이미지들을 가로로 배치 */
+            justify-content: center; /* 가로 정렬 */
+            align-items: center; /* 세로 정렬 */
+            gap: 20px; /* 이미지 간격 */
+        }
+    </style>
 </head>
-
 <body id="page-top">
+<!-- Page Wrapper -->
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            {% include 'common/topbar.html' %}
+            <!-- Begin Page Content -->
+            <div class="container-fluid">
+                <!-- Page Heading -->
+                <h1 class="h3 mb-4 text-gray-800">회원 정보 수정</h1>
+                <div class="d-flex justify-content-center" style="min-height: 100vh;">
+                    <div class="col-md-12">
+                        <table class="table table-bordered text-center">
+                            <thead>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td style="text-align: center; vertical-align: middle">회원 사진</td>
+                                <td style="text-align: center">
+                                    <div class="image-container">
+                                        <img src="/static/img/members/mphoto_{{member_dtl[0]}}.png"
+                                             onerror="this.src='/static/img/defaultphoto.png'" alt="Member Image">
+                                        <img id="imagePreview" alt="Image Preview">
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>사진 변경</td>
+                                <td>
+                                    <form action="/uploadcmphoto/{{member_dtl[0]}}" method="post"
+                                          enctype="multipart/form-data">
+                                        <input type="file" name="file" accept="image/*" required
+                                               onchange="displayFileInfo(this)">
+                                        <span id="fileSize"></span>
+                                        <input type="submit" value="회원사진 Upload"></form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs" id="memberTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="tab-basic" data-toggle="tab" href="#pane-basic"
+                                   role="tab">기본정보</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="tab-detail" data-toggle="tab" href="#pane-detail" role="tab">상세정보</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="tab-club" data-toggle="tab" href="#pane-club"
+                                   role="tab">활동경력</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="tab-award" data-toggle="tab" href="#pane-award"
+                                   role="tab">수상경력</a>
+                            </li>
+                        </ul>
 
-    <!-- Page Wrapper -->
-    <div id="wrapper">
+                        <div class="tab-content border-left border-right border-bottom p-3" id="memberTabsContent">
+                            <!-- 기본정보 -->
+                            <div class="tab-pane fade show active" id="pane-basic" role="tabpanel"
+                                 aria-labelledby="tab-basic">
+                                <form method="POST" id="editor-form" action="/cmember_update/{{member_dtl[0]}}">
+                                    <table class="table table-bordered text-center">
+                                        <tr>
+                                            <td> 회원명</td>
+                                            <td><input class="form-control" id="membername" name="membername"
+                                                       type="text" required value="{{ member_dtl[1] }}"></td>
+                                        </tr>
+                                        <tr>
+                                            <td> 회원명(영문)</td>
+                                            <td><input class="form-control" id="membernameeng" name="membernameeng"
+                                                       type="text"
+                                                       value="{% if member_dtl[2] is not none %}{{ member_dtl[2] }}{% endif %}">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td> 회원명(한문)</td>
+                                            <td><input class="form-control" id="membernamecn" name="membernamecn"
+                                                       type="text"
+                                                       value="{% if member_dtl[3] is not none %}{{ member_dtl[3] }}{% endif %}">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td> 생년월일</td>
+                                            <td><input class="form-control" id="memberbirth" name="memberbirth"
+                                                       type="date"
+                                                       value="{% if member_dtl[7] is not none %}{{ member_dtl[7] }}{% endif %}">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td> 입회일</td>
+                                            <td><input class="form-control" id="regdate" name="regdate" type="date"
+                                                       value="{% if member_dtl[9] is not none %}{{ member_dtl[9] }}{% endif %}">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td> 회원번호 (국제)</td>
+                                            <td><input class="form-control" id="regno" name="regno" type="number"
+                                                       value="{{ member_dtl[8] }}"></td>
+                                        </tr>
+                                        <tr>
+                                            <td> 성별</td>
+                                            <td><select class="form-control" id="membermf" name="membermf">
+                                                <option value="M" {% if member_dtl[6]==
+                                                'M' %} selected {% endif %}>남성</option>
+                                                <option value="F" {% if member_dtl[6]==
+                                                'F' %} selected {% endif %}>여성</option>
+                                            </select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td> 정보공개여부</td>
+                                            <td><select class="form-control" id="membermask" name="membermask">
+                                                <option value="Y" {% if member_dtl[13]==
+                                                'Y' %} selected {% endif %}>비공개</option>
+                                                <option value="N" {% if member_dtl[13]==
+                                                'N' %} selected {% endif %}>공개</option>
+                                            </select></td>
+                                        </tr>
+                                        <tr>
+                                            <td>활동상태</td>
+                                            <td><select class="form-control" id="memberstat" name="memberstat">
+                                                <option value="ACTIV" {% if member_dtl[10]==
+                                                'ACTIV' %}selected{% endif %}>활동중</option>
+                                                <option value="RETIR" {% if member_dtl[10]==
+                                                'RETIR' %}selected{% endif %}>퇴회</option>
+                                                <option value="EXPEL" {% if member_dtl[10]==
+                                                'EXPEL' %}selected{% endif %}>제명</option>
+                                                <option value="RIP" {% if member_dtl[10]==
+                                                'RIP' %}selected{% endif %}>사망</option>
+                                            </select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="text-align: center; vertical-align:middle">회원 메모</td>
+                                            <td>
+                                        <textarea class="form-control" rows="4" cols="30" name="membermemo"
+                                                  placeholder="내용을 입력하세요">{{ member_dtl[14] or '' }}</textarea>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <div class="col-12"
+                                                     style="display: flex; justify-content: space-between; gap: 10px;">
+                                                    <a href="#"
+                                                       onclick="window.location.href='/memberList'; return false;"
+                                                       class="btn btn-dark"
+                                                       role="button" style="flex: 0 0 30%;">회원 목록으로 가기</a>
+                                                    <button type="submit" class="btn btn-primary"
+                                                            style="flex: 0 0 50%;">변경내용저장
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                            <!-- 상세정보 -->
+                            <div class="tab-pane fade" id="pane-detail" role="tabpanel" aria-labelledby="tab-detail">
+                                <!-- 입력 폼 -->
+                                <form method="POST" id="detail-form" action="/insert_MIDTL/{{member_dtl[0]}}/">
+                                    <table class="table table-bordered text-center">
+                                        <tbody>
+                                        <tr>
+                                            <td style="width:30%;">
+                                                <select class="form-control" id="mdtlcat" name="dtlcat">
+                                                    {% for cat in catlist %}
+                                                    <option value="{{cat.catNo}}">{{cat.catTitle}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td style="width:70%;">
+                                                <div class="d-flex align-items-center">
+                                                    <input class="form-control mr-2" id="dtlcont" name="dtlcont"
+                                                           type="text" value="">
+                                                    <button type="submit" class="btn btn-primary"
+                                                            style="white-space:nowrap;">저장
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                                <!-- 저장된 상세정보 목록 -->
+                                <table class="table table-bordered text-center mt-3" id="detail-table">
+                                    <thead>
+                                    <tr>
+                                        <th>회원정보</th>
+                                        <th>내용</th>
+                                        <th>등록일</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="detail-tbody">
+                                    {% for row in member_detail_list %}
+                                    <tr data-id="{{ row.id }}">
+                                        <td>{{ row.catTitle }}</td>
+                                        <td>{{ row.detailInfo }}</td>
+                                        <td>{{ row.regDate }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- 클럽경력 -->
+                            <div class="tab-pane fade" id="pane-club" role="tabpanel" aria-labelledby="tab-club">
+                                <form method="POST" id="clubcare-form"
+                                      action="">
+                                    <table class="table table-bordered text-center">
+                                        <thead>
+                                        <tr>
+                                            <th>년도</th>
+                                            <th>직책</th>
+                                            <th>비고</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                            <!-- 지구경력 -->
+                            <div class="tab-pane fade" id="pane-district" role="tabpanel"
+                                 aria-labelledby="tab-district">
+                                <form method="POST" id="district-form"
+                                      action="">
+                                    <table class="table table-bordered text-center">
+                                        <thead>
+                                        <tr>
+                                            <th>년도</th>
+                                            <th>직책</th>
+                                            <th>비고</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                            <!-- 상벌사항 -->
+                            <div class="tab-pane fade" id="pane-award" role="tabpanel" aria-labelledby="tab-award">
+                                <form method="POST" id="prize-form" action="/insert_PRIZE/{{member_dtl[0]}}/">
+                                    <table class="table table-bordered text-center">
+                                        <tbody>
+                                        <tr>
+                                            <td style="width:20%;">
+                                                <select class="form-control" id="prizecat" name="prizecat">
+                                                </select>
+                                            </td>
+                                            <td style="width:20%;">
+                                                <input class="form-control" id="prizedate" name="prizedate" type="date">
+                                            </td>
+                                            <td style="width:70%;">
+                                                <div class="d-flex align-items-center">
+                                                    <input class="form-control mr-2" id="prizecont" name="prizecont"
+                                                           type="text" value="">
+                                                    <button type="submit" class="btn btn-primary"
+                                                            style="white-space:nowrap;">저장
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                                <!-- 저장된 상세정보 목록 -->
+                                <table class="table table-bordered text-center mt-3" id="prize-table">
+                                    <thead>
+                                    <tr>
+                                        <th>수상내역</th>
+                                        <th>수상일자</th>
+                                        <th>수상행사</th>
+                                        <th>내용</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="prize-tbody">
 
-        {% include 'common/sidebar.html' %}
-
-        <!-- Content Wrapper -->
-        <div id="content-wrapper" class="d-flex flex-column">
-
-            <!-- Main Content -->
-            <div id="content">
-
-                {% include 'common/topbar.html' %}
-
-                <!-- Begin Page Content -->
-                <div class="container-fluid">
-
-
-
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- End of Main Content -->
-
-            {% include 'common/footer.html' %}
-
+            <!-- /.container-fluid -->
         </div>
-        <!-- End of Content Wrapper -->
-
+        <!-- End of Main Content -->
+        {% include 'common/footer.html' %}
     </div>
-    <!-- End of Page Wrapper -->
-
-    <!-- Scroll to Top Button-->
-    <a class="scroll-to-top rounded" href="#page-top">
-        <i class="fas fa-angle-up"></i>
-    </a>
-
-    <!-- Logout Modal-->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="/logout">Logout</a>
-                </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+<!-- Logout Modal-->
+<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" href="/logout">Logout</a>
             </div>
         </div>
     </div>
-
-    <!-- Bootstrap core JavaScript-->
+</div>
+<!-- Bootstrap core JavaScript-->
 {% include 'common/adscript.html' %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+<script>
 
+    $(document).ready(function () {
+        $('.selectpicker').selectpicker({
+            style: 'btn-inverse',
+            size: 20
+        });
+    });
+    $('.selectpicker').selectpicker('refresh');
+
+    function displayFileInfo(input) {
+        const file = input.files[0];
+        const fileSizeElement = document.getElementById("fileSize");
+        const previewElement = document.getElementById("imagePreview");
+        if (file) {
+            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2); // MB로 변환
+            fileSizeElement.textContent = `Selected file size: ${sizeInMB} MB`;
+            // 이미지 미리보기
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewElement.src = e.target.result;
+                previewElement.style.display = "block"; // 이미지 보이기
+            };
+            reader.readAsDataURL(file);
+        } else {
+            fileSizeElement.textContent = "";
+            previewElement.style.display = "none"; // 이미지 숨기기
+        }
+    }
+
+</script>
+<script>
+  const MEMBER_NO = "{{ member_dtl[0] }}";
+
+  function renderDetailRows(rows) {
+    const tbody = document.getElementById("detail-tbody");
+    tbody.innerHTML = "";
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-id", row.id);
+      tr.setAttribute("data-catno", row.catNo);
+      tr.innerHTML = `
+        <td>${row.catTitle}</td>
+        <td>${row.detailInfo}</td>
+        <td>${row.regDate || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ✅ 수상내역용 렌더러 (prize-tbody를 갱신)
+  function renderPrizeRows(rows) {
+    const tbody = document.getElementById("prize-tbody");
+    tbody.innerHTML = "";
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-id", row.id);
+
+      tr.innerHTML = `
+        <td>${row.prizeTitle || ""}</td>
+        <td>${row.prizeDate || ""}</td>
+        <td>${row.eventTitle || ""}</td>
+        <td>${row.prizeMemo || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function refreshDetailTable() {
+    const res = await fetch(`/api/member/${MEMBER_NO}/midtl`, {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      alert(data.message || "목록 조회 실패");
+      return;
+    }
+    renderDetailRows(data.rows || []);
+  }
+
+  async function refreshPrizeTable() {
+    const res = await fetch(`/api/member/${MEMBER_NO}/prize`, {
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      alert(data.message || "목록 조회 실패");
+      return;
+    }
+
+    // ❌ renderDetailRows(data.rows || []);
+    // ✅ prize 테이블 갱신
+    renderPrizeRows(data.rows || []);
+  }
+
+  document.getElementById('prize-form')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    const res = await fetch(form.action, {
+      method: 'POST',
+      body: formData,
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      alert(data.message || "저장 실패");
+      return;
+    }
+
+    form.querySelector('input[name="prizecont"]').value = "";
+    await refreshPrizeTable();
+  });
+
+  // 탭 이벤트는 한 번만 등록해서 처리하는 걸 추천
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    if (e.target && e.target.id === 'tab-detail') refreshDetailTable();
+    if (e.target && e.target.id === 'tab-award')  refreshPrizeTable();
+    $('.selectpicker').selectpicker('refresh');
+  });
+
+  document.getElementById('detail-form')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    const res = await fetch(form.action, {
+      method: 'POST',
+      body: formData,
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      alert(data.message || "저장 실패");
+      return;
+    }
+
+    // 입력창 비우기
+    form.querySelector('input[name="dtlcont"]').value = "";
+
+    // 테이블 갱신
+    await refreshDetailTable();
+  });
+</script>
 </body>
-
 </html>

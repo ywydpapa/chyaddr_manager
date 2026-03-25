@@ -121,7 +121,37 @@
 
 <!-- Bootstrap core JavaScript-->
 {% include 'common/adscript.html' %}
-
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('msg') === 'success') {
+            const toast = document.createElement('div');
+            toast.innerText = "업데이트 되었습니다.";
+            Object.assign(toast.style, {
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                backgroundColor: '#1cc88a', /* SB Admin 2의 Success 컬러 */
+                color: 'white',
+                padding: '15px 25px',
+                borderRadius: '5px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                zIndex: '9999',
+                opacity: '1',
+                transition: 'opacity 0.5s ease-in-out',
+                fontWeight: 'bold'
+            });
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.remove();
+                }, 500);
+            }, 2000);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    });
+</script>
 </body>
 
 </html>

@@ -97,6 +97,24 @@ async def get_ranklist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(RANK_LIST)")
 
 
+async def get_memberlist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyMember where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MEMBER_LIST)")
+
+
+async def get_catgorylist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyCategory where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CATEGORY_LIST)")
+
+
 async def get_classlist(db: AsyncSession):
     try:
         query = text("SELECT * FROM chyClass where attrib not like :attpatt")
@@ -124,3 +142,27 @@ async def get_classdetail(db: AsyncSession, classno: int):
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_DETAIL)")
 
 
+async def get_categorydetail(db: AsyncSession, catno: int):
+    try:
+        query = text("SELECT * FROM chyCategory where catNo = :catno")
+        result = await db.execute(query, {"catno": catno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CATEGORY_DETAIL)")
+
+
+async def get_categorybytype(db: AsyncSession, catType: str):
+    try:
+        query = text("SELECT * FROM chyCategory where catType = :cattype and useYn = 'Y'")
+        result = await db.execute(query, {"cattype": catType})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CATEGORY_TYPE)")
+
+async def get_memberdetail(db: AsyncSession, memberno: int):
+    try:
+        query = text("SELECT * FROM chyMember where memberNo = :memberno")
+        result = await db.execute(query, {"memberno": memberno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MEMBER_DETAIL)")
