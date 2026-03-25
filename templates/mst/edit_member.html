@@ -257,8 +257,9 @@
                                         <tr>
                                             <td style="width:30%;">
                                                 <select class="form-control" id="mdtlcat" name="dtlcat">
-                                                    {% for cat in catlist %}
-                                                    <option value="{{cat.catNo}}">{{cat.catTitle}}</option>
+                                                    <option value="">추가할 항목 선택</option>
+                                                    {% for cat in categories %}
+                                                    <option value="{{cat[0]}}">{{cat[1]}}</option>
                                                     {% endfor %}
                                                 </select>
                                             </td>
@@ -288,7 +289,7 @@
                                     {% for row in member_detail_list %}
                                     <tr data-id="{{ row.id }}">
                                         <td>{{ row.catTitle }}</td>
-                                        <td>{{ row.detailInfo }}</td>
+                                        <td>{{ row.infoContents }}</td>
                                         <td>{{ row.regDate }}</td>
                                     </tr>
                                     {% endfor %}
@@ -453,7 +454,7 @@
       tr.setAttribute("data-catno", row.catNo);
       tr.innerHTML = `
         <td>${row.catTitle}</td>
-        <td>${row.detailInfo}</td>
+        <td>${row.infoContents}</td>
         <td>${row.regDate || ""}</td>
       `;
       tbody.appendChild(tr);
@@ -490,20 +491,6 @@
     renderDetailRows(data.rows || []);
   }
 
-  async function refreshPrizeTable() {
-    const res = await fetch(`/api/member/${MEMBER_NO}/prize`, {
-      headers: {"X-Requested-With": "XMLHttpRequest"}
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      alert(data.message || "목록 조회 실패");
-      return;
-    }
-
-    // ❌ renderDetailRows(data.rows || []);
-    // ✅ prize 테이블 갱신
-    renderPrizeRows(data.rows || []);
-  }
 
   document.getElementById('prize-form')?.addEventListener('submit', async function (e) {
     e.preventDefault();

@@ -9,7 +9,7 @@ from fastapi import (
     Form,
     Response,
     HTTPException,
-    Body,
+    Body,File, UploadFile
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -21,9 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 import dotenv
+from starlette.responses import JSONResponse
 
 import funchub
-from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_password
+from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_password, get_current_user
 
 dotenv.load_dotenv()
 
@@ -64,6 +65,28 @@ security = HTTPBearer()
 async def get_db():
     async with async_session() as session:
         yield session
+
+
+def _clean_str(value: object) -> str | None:
+    if value is None:
+        return None
+    s = str(value).strip()
+    return s if s != "" else None
+
+def _clean_int(value: object) -> int | None:
+    s = _clean_str(value)
+    if s is None:
+        return None
+    try:
+        return int(s)
+    except ValueError:
+        raise ValueError(f"Invalid integer input: {s!r}")
+
+def to_int(s, default=0):
+    try:
+        return int(s)
+    except Exception:
+        return default
 
 
 async def get_current_mobile_user(
@@ -302,4 +325,43 @@ async def category_detail(request: Request, catno: int, db: AsyncSession = Depen
 async def member_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
     member_detail = await funchub.get_memberdetail(db, memberno)
     categories = await funchub.get_categorybytype(db, 'MBIFO')
-    return templates.TemplateResponse("mst/edit_member.html", { "request": request, "member_dtl": member_detail })
+    return templates.TemplateResponse("mst/edit_member.html", { "request": request, "member_dtl": member_detail, "categories": categories })
+
+
+@app.get("/api/member/{memberno}/midtl")
+async def api_member_midt_list(memberno: int, request: Request, db: AsyncSession = Depends(get_db), user_no: int = Depends(get_current_user)):
+    result = await db.execute(text("SELECT d.infoNo as id, d.catNo, c.catTitle, d.infoContents, DATE_FORMAT(d.regDate, '%Y-%m-%d') AS regDate FROM chyMemberInfo d JOIN chyCategory c ON c.catNo = d.catNo WHERE d.memberNo = :mno AND d.attrib = :xapp ORDER BY d.catNo ASC"), {"mno": memberno, "xapp": "1000010000"})
+    return {"ok": True, "rows": [dict(r._mapping) for r in result.fetchall()]}
+
+
+@app.post("/insert_MIDTL/{memberno}/")
+async def insert_midt_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    if not request.session.get("user_No"):
+        return JSONResponse({"ok": False, "message": "login required"}, status_code=401) if is_ajax else RedirectResponse(url="/", status_code=303)
+    form = await request.form()
+    cat_no, detail_info = to_int(form.get("dtlcat"), 0), (form.get("dtlcont") or "").strip()
+    if cat_no <= 0 or detail_info == "":
+        return JSONResponse({"ok": False, "message": "invalid input"}, status_code=400)
+    try:
+        async with db.begin():
+            await db.execute(text("UPDATE chyMemberInfo SET attrib = :xup, modDate = NOW() WHERE memberNo = :mno AND catNo = :cno AND attrib = :xapp"), {"xup": "XXXUPXXXUP", "mno": memberno, "cno": cat_no, "xapp": "1000010000"})
+            result = await db.execute(text("INSERT INTO chyMemberInfo (memberNo, catNo, infoContents, attrib, regDate) VALUES (:mno, :cno, :info, :xapp, NOW())"), {"mno": memberno, "cno": cat_no, "info": detail_info, "xapp": "1000010000"})
+            row = (await db.execute(text("SELECT d.infoNo as id, d.memberNo, d.catNo, c.catTitle, d.infoContents, DATE_FORMAT(d.regDate, '%Y-%m-%d') AS regDate FROM chyMemberInfo d JOIN chyCategory c ON c.catNo = d.catNo WHERE d.infoNo = :id"), {"id": result.lastrowid})).mappings().first()
+        return JSONResponse({"ok": True, "row": dict(row) if row else None}) if is_ajax else RedirectResponse(url=request.headers.get("referer", "/"), status_code=303)
+    except Exception as e:
+        return JSONResponse({"ok": False, "message": str(e)}, status_code=500)
+
+
+@app.post("/uploadcmphoto/{memberno}", dependencies=[Depends(get_current_user)])
+async def upload_memberimage(request: Request, memberno: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    try:
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File type not supported.")
+        contents = await funchub.safe_file_read(file)
+        contents = await funchub.resize_image_if_needed(contents, max_bytes=102400)
+        await funchub.save_memberPhoto(contents, memberno)
+        return RedirectResponse(f"/memberDetail/{memberno}", status_code=303)
+    except Exception as e:
+        print(f"Error: {e}")
+        return RedirectResponse(f"/memberDetail/{memberno}", status_code=303)

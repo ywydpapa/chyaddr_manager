@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
+from fastapi import HTTPException,status,Request,UploadFile,File
 from firebase_admin import messaging
 from passlib.exc import UnknownHashError
 import jwt
@@ -19,7 +19,9 @@ import dotenv
 dotenv.load_dotenv()
 
 # 상수 설정
-MPHOTO_DIR = "./static/img/members"
+MAX_UPLOAD_SIZE = 25 * 1024 * 1024
+MEMBERPHOTO_DIR = "./static/img/members"
+EVENTPHOTO_DIR = "./static/img/events"
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "my_super_secret_mobile_key_1234!")
 ALGORITHM = "HS256"
 
@@ -68,6 +70,21 @@ def verify_password(plain_password: str, hashed_password: str):
         return legacy_context.verify(plain_password, hashed_password)
     except Exception:
         return False
+
+
+async def get_current_user(request: Request) -> int:
+    user_no = request.session.get("user_No")
+    if not user_no:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="로그인이 필요합니다."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"Location": "/"}
+        )
+    return user_no
 
 
 async def get_classlist(db: AsyncSession):
@@ -166,3 +183,57 @@ async def get_memberdetail(db: AsyncSession, memberno: int):
         return result.fetchone()
     except Exception:
         raise HTTPException(status_code=500, detail="Database query failed(MEMBER_DETAIL)")
+
+
+async def save_memberPhoto(image_data: bytes, memberno: int, size=(200, 300)):
+    os.makedirs(MEMBERPHOTO_DIR, exist_ok=True)  # 수정: THUMBNAIL_DIR -> MEMBERPHOTO_DIR
+    image = Image.open(io.BytesIO(image_data))
+    image.thumbnail(size)
+    thumbnail_path = os.path.join(MEMBERPHOTO_DIR, f"mphoto_{memberno}.png")
+    image.save(thumbnail_path, format="PNG")
+    return thumbnail_path
+
+
+async def save_eventPhoto(image_data: bytes, eventno: int, size=(200, 300)):
+    os.makedirs(EVENTPHOTO_DIR, exist_ok=True)
+    image = Image.open(io.BytesIO(image_data))
+    image.thumbnail(size)
+    thumbnail_path = os.path.join(EVENTPHOTO_DIR, f"ephoto_{eventno}.png") # 수정: MEMBERPHOTO_DIR -> EVENTPHOTO_DIR
+    image.save(thumbnail_path, format="PNG")
+    return thumbnail_path
+
+
+async def safe_file_read(file: UploadFile, max_size: int = MAX_UPLOAD_SIZE) -> bytes:
+    contents = bytearray()
+    while chunk := await file.read(1024 * 1024):
+        contents.extend(chunk)
+        if len(contents) > max_size:
+            raise HTTPException(
+                status_code=413,
+                detail=f"파일 용량이 너무 큽니다. (최대 {max_size / 1024 / 1024}MB 허용)"
+            )
+    return bytes(contents)
+
+
+async def resize_image_if_needed(contents: bytes, max_bytes: int = 314572) -> bytes:
+    if len(contents) <= max_bytes:
+        return contents
+    image = Image.open(io.BytesIO(contents))
+    format = image.format if image.format else 'JPEG'
+    quality = 85
+    for trial in range(10):
+        buffer = io.BytesIO()
+        save_kwargs = {'format': format}
+        if format.upper() in ['JPEG', 'JPG']:
+            save_kwargs['quality'] = quality
+            save_kwargs['optimize'] = True
+        image.save(buffer, **save_kwargs)
+        data = buffer.getvalue()
+        if len(data) <= max_bytes:
+            return data
+        if format.upper() in ['JPEG', 'JPG'] and quality > 30:
+            quality -= 10
+        else:
+            w, h = image.size
+            image = image.resize((int(w * 0.9), int(h * 0.9)), Image.LANCZOS)
+    return data
