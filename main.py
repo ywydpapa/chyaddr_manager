@@ -315,6 +315,12 @@ async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends
     return templates.TemplateResponse("mst/edit_class.html", { "request": request, "class_dtl": class_detail })
 
 
+@app.get("/class_Detail/{classno}", response_class=HTMLResponse)
+async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
+    class_detail = await funchub.get_classdetail(db, classno)
+    return templates.TemplateResponse("class/class_detail.html", { "request": request, "class_dtl": class_detail })
+
+
 @app.get("/categoryDetail/{catno}", response_class=HTMLResponse)
 async def category_detail(request: Request, catno: int, db: AsyncSession = Depends(get_db)):
     category_detail = await funchub.get_categorydetail(db, catno)
@@ -365,3 +371,64 @@ async def upload_memberimage(request: Request, memberno: int, file: UploadFile =
     except Exception as e:
         print(f"Error: {e}")
         return RedirectResponse(f"/memberDetail/{memberno}", status_code=303)
+
+
+@app.post("/update_member/{memberno}", response_class=HTMLResponse)
+async def updatemember(request: Request, memberno: int, db: AsyncSession = Depends(get_db), user_no: int = Depends(get_current_user)):
+    form_data = await request.form()
+    data = {"memberName": _clean_str(form_data.get("membername")), "memberNameEng": _clean_str(form_data.get("membernameeng")), "memberNameCn": _clean_str(form_data.get("membernamecn")), "memberMF": _clean_str(form_data.get("membermf")), "memberId": _clean_str(form_data.get("memberid")), "activeYN": _clean_str(form_data.get("memberstat")), "memberNo": memberno, "memberMemo": form_data.get("membermemo", '')}
+    update_fields = {k: v for k, v in data.items() if v is not None}
+    if update_fields:
+        params = dict(update_fields)
+        params["memberNo"] = memberno
+        await db.execute(text(f"UPDATE chyMember SET {', '.join([f'{k} = :{k}' for k in update_fields.keys()])} WHERE memberNo = :memberNo"), params)
+        await db.commit()
+    return RedirectResponse(f"/memberDetail/{memberno}", status_code=303)
+
+
+@app.get("/class_list", response_class=HTMLResponse)
+async def classlists(request: Request, db: AsyncSession = Depends(get_db)):
+    class_list = await funchub.get_classlist(db)
+    return templates.TemplateResponse("class/class_list.html", {
+        "request": request, "class_list": class_list})
+
+
+@app.get("/class_members/{classno}", response_class=HTMLResponse)
+async def classmembers(request: Request,classno:int ,db: AsyncSession = Depends(get_db)):
+    member_list = await funchub.get_memberlist(db)
+    cmember_list = await funchub.get_classmemberlist(db, classno)
+    return templates.TemplateResponse("class/class_members.html", {
+        "request": request, "member_list": member_list, "classno": classno, "cmember_list": cmember_list})
+
+
+@app.post("/membertoclass/{classno}/{memberno}")
+async def membertoclass(request: Request, classno: int, memberno: int, db: AsyncSession = Depends(get_db)):
+    query = text(f"select * from chyClassmember where classNo = :classno and memberNo = :memberno")
+    result = await db.execute(query, {"classno": classno, "memberno": memberno})
+    if result.rowcount == 0:
+        query = text(f"INSERT into chyClassmember (classNo, memberNo) values (:classno, :memberno)")
+        await db.execute(query, {"classno": classno, "memberno": memberno})
+        await db.commit()
+        return JSONResponse({"result": "ok"})
+    else:
+        return JSONResponse({"result": "already"})
+
+
+@app.post("/membertoclassminus/{classno}/{memberno}")
+async def membertoclassminus(request: Request, classno: int, memberno: int, db: AsyncSession = Depends(get_db)):
+    query = text(f"select * from chyClassmember where classNo = :classno and memberNo = :memberno")
+    result = await db.execute(query, {"classno": classno, "memberno": memberno})
+    if result.rowcount != 0:
+        query = text(f"DELETE FROM chyClassmember where classNo = :classno and memberNo = :memberno")
+        await db.execute(query, {"classno": classno, "memberno": memberno})
+        await db.commit()
+        return JSONResponse({"result": "ok"})
+    else:
+        return JSONResponse({"result": "already"})
+
+
+@app.get("/getclassmembers/{classno}", response_class=JSONResponse)
+async def getclassmembers(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
+    rows = await funchub.get_classmemberlist(db, classno)
+    members = [funchub.row_to_dict(row) for row in rows]
+    return JSONResponse({"members": members})

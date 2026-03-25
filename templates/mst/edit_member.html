@@ -135,7 +135,7 @@
                                    role="tab">기본정보</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" id="tab-detail" data-toggle="tab" href="#pane-detail" role="tab">상세정보</a>
+                                <a class="nav-link" id="tab-detail" data-toggle="tab" href="#pane-detail" role="tab">부가정보</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="tab-club" data-toggle="tab" href="#pane-club"
@@ -151,7 +151,7 @@
                             <!-- 기본정보 -->
                             <div class="tab-pane fade show active" id="pane-basic" role="tabpanel"
                                  aria-labelledby="tab-basic">
-                                <form method="POST" id="editor-form" action="/cmember_update/{{member_dtl[0]}}">
+                                <form method="POST" id="editor-form" action="/update_member/{{member_dtl[0]}}">
                                     <table class="table table-bordered text-center">
                                         <tr>
                                             <td> 회원명</td>
@@ -173,52 +173,36 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td> 생년월일</td>
-                                            <td><input class="form-control" id="memberbirth" name="memberbirth"
-                                                       type="date"
-                                                       value="{% if member_dtl[7] is not none %}{{ member_dtl[7] }}{% endif %}">
+                                            <td> 로그인아이디</td>
+                                            <td><input class="form-control" id="memberid" name="memberid" type="text"
+                                                       value="{% if member_dtl[5] is not none %}{{ member_dtl[5] }}{% endif %}">
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td> 입회일</td>
-                                            <td><input class="form-control" id="regdate" name="regdate" type="date"
-                                                       value="{% if member_dtl[9] is not none %}{{ member_dtl[9] }}{% endif %}">
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td> 회원번호 (국제)</td>
-                                            <td><input class="form-control" id="regno" name="regno" type="number"
-                                                       value="{{ member_dtl[8] }}"></td>
+                                            <td> 암호설정여부</td>
+                                            <td><input class="form-control" id="mpass" name="mpass" type="text"
+                                                       value="{{ member_dtl[6] }}"></td>
                                         </tr>
                                         <tr>
                                             <td> 성별</td>
                                             <td><select class="form-control" id="membermf" name="membermf">
-                                                <option value="M" {% if member_dtl[6]==
+                                                <option value="M" {% if member_dtl[4]==
                                                 'M' %} selected {% endif %}>남성</option>
-                                                <option value="F" {% if member_dtl[6]==
+                                                <option value="F" {% if member_dtl[4]==
                                                 'F' %} selected {% endif %}>여성</option>
                                             </select>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td> 정보공개여부</td>
-                                            <td><select class="form-control" id="membermask" name="membermask">
-                                                <option value="Y" {% if member_dtl[13]==
-                                                'Y' %} selected {% endif %}>비공개</option>
-                                                <option value="N" {% if member_dtl[13]==
-                                                'N' %} selected {% endif %}>공개</option>
-                                            </select></td>
-                                        </tr>
-                                        <tr>
                                             <td>활동상태</td>
                                             <td><select class="form-control" id="memberstat" name="memberstat">
-                                                <option value="ACTIV" {% if member_dtl[10]==
+                                                <option value="ACTIV" {% if member_dtl[8]==
                                                 'ACTIV' %}selected{% endif %}>활동중</option>
-                                                <option value="RETIR" {% if member_dtl[10]==
+                                                <option value="RETIR" {% if member_dtl[8]==
                                                 'RETIR' %}selected{% endif %}>퇴회</option>
-                                                <option value="EXPEL" {% if member_dtl[10]==
+                                                <option value="EXPEL" {% if member_dtl[8]==
                                                 'EXPEL' %}selected{% endif %}>제명</option>
-                                                <option value="RIP" {% if member_dtl[10]==
+                                                <option value="RIP" {% if member_dtl[8]==
                                                 'RIP' %}selected{% endif %}>사망</option>
                                             </select>
                                             </td>
@@ -227,7 +211,7 @@
                                             <td style="text-align: center; vertical-align:middle">회원 메모</td>
                                             <td>
                                         <textarea class="form-control" rows="4" cols="30" name="membermemo"
-                                                  placeholder="내용을 입력하세요">{{ member_dtl[14] or '' }}</textarea>
+                                                  placeholder="내용을 입력하세요">{{ member_dtl[9] or '' }}</textarea>
                                             </td>
                                         </tr>
                                         <tr>

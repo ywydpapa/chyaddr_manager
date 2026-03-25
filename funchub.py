@@ -215,6 +215,14 @@ async def safe_file_read(file: UploadFile, max_size: int = MAX_UPLOAD_SIZE) -> b
     return bytes(contents)
 
 
+def row_to_dict(row):
+    d = dict(row._mapping)
+    for k, v in d.items():
+        if isinstance(v, (datetime.date, datetime.datetime)):
+            d[k] = v.isoformat()
+    return d
+
+
 async def resize_image_if_needed(contents: bytes, max_bytes: int = 314572) -> bytes:
     if len(contents) <= max_bytes:
         return contents
@@ -237,3 +245,15 @@ async def resize_image_if_needed(contents: bytes, max_bytes: int = 314572) -> by
             w, h = image.size
             image = image.resize((int(w * 0.9), int(h * 0.9)), Image.LANCZOS)
     return data
+
+
+async def get_classmemberlist(db: AsyncSession, classno: int):
+    try:
+        query = text(
+            "SELECT lm.*, m.memberName, r.rankTitlekor FROM chyClassmember lm left join chyMember m on lm.memberNo = m.memberNo left join chyRank r on lm.classRank = r.rankNo "
+            "where lm.classNo = :classno")
+        result = await db.execute(query, {"classno": classno})
+        return result.fetchall()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Database query failed(ClassMemberLIST)")
