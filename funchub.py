@@ -141,6 +141,15 @@ async def get_classlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
 
 
+async def get_eventlist(db: AsyncSession):
+    try:
+        query = text("SELECT a.*, COUNT(b.memberNo) AS memberCount FROM chyEvent a LEFT JOIN chyEventmember b ON a.eventNo = b.eventNo where a.attrib not like :attpatt GROUP BY a.eventNo")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
+
+
 async def get_rankdetail(db: AsyncSession, rankno: int):
     try:
         query = text("SELECT * FROM chyRank where rankNo = :rankno")
@@ -157,6 +166,15 @@ async def get_classdetail(db: AsyncSession, classno: int):
         return result.fetchone()
     except Exception:
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_DETAIL)")
+
+
+async def get_eventdetail(db: AsyncSession, eventno: int):
+    try:
+        query = text("SELECT * FROM chyEvent where eventNo = :eventno")
+        result = await db.execute(query, {"eventno": eventno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(EVENT_DETAIL)")
 
 
 async def get_categorydetail(db: AsyncSession, catno: int):
@@ -257,3 +275,17 @@ async def get_classmemberlist(db: AsyncSession, classno: int):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Database query failed(ClassMemberLIST)")
+
+
+async def get_eventmemberlist(db: AsyncSession, eventno: int):
+    try:
+        query = text(
+            "SELECT lm.*, m.memberName, r.rankTitlekor, e.eventTitle, f.classNo FROM chyEventmember lm left join chyMember m on lm.memberNo = m.memberNo left join chyRank r on lm.classRank = r.rankNo "
+            "LEFT JOIN chyEvent e on lm.eventNo = e.eventNo "
+            "LEFT JOIN chyClassmember f on lm.memberNo = f.memberNo "
+            "where lm.eventNo = :eventno group by lm.memberNo")
+        result = await db.execute(query, {"eventno": eventno})
+        return result.fetchall()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Database query failed(EventMemberLIST)")

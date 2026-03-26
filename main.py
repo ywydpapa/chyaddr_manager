@@ -250,6 +250,16 @@ async def add_member(request: Request, db: AsyncSession = Depends(get_db)):
     return RedirectResponse(f"/memberList", status_code=303)
 
 
+@app.get("/add_event", response_class=HTMLResponse)
+async def add_event(request: Request, db: AsyncSession = Depends(get_db)):
+    query = text(
+        "INSERT INTO chyEvent (eventTitle, eventPlace) values (:etitle, :eplace)")
+    await db.execute(query,
+                     {"etitle": "새로 등록된 Event", "eplace": "미정"})
+    await db.commit()
+    return RedirectResponse(f"/event_list", status_code=303)
+
+
 @app.get("/add_class", response_class=HTMLResponse)
 async def add_class(request: Request, db: AsyncSession = Depends(get_db)):
     query = text(
@@ -282,6 +292,18 @@ async def update_class(request: Request, classno: int, db: AsyncSession = Depend
     await db.execute(query, data4update)
     await db.commit()
     return RedirectResponse(f"/classDetail/{classno}?msg=success", status_code=303)
+
+
+@app.post("/update_event/{eventno}", response_class=HTMLResponse)
+async def update_event(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
+    form_data = await request.form()
+    data4update = {
+        "eventNo": eventno, "eventTitle": form_data.get("eventtitle"), "eventFrom": form_data.get("eventfr"),
+        "eventTo": form_data.get("eventto"),"eventPlace": form_data.get("eventplace"), }
+    query = text("UPDATE chyEvent SET eventTitle = :eventTitle, eventFrom = :eventFrom, eventTo = :eventTo, eventPlace = :eventPlace WHERE eventNo = :eventNo")
+    await db.execute(query, data4update)
+    await db.commit()
+    return RedirectResponse(f"/event_Detail/{eventno}?msg=success", status_code=303)
 
 
 @app.post("/update_category/{catno}", response_class=HTMLResponse)
@@ -319,6 +341,12 @@ async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends
 async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     class_detail = await funchub.get_classdetail(db, classno)
     return templates.TemplateResponse(request=request, name="class/class_detail.html", context={ "request": request, "class_dtl": class_detail })
+
+
+@app.get("/event_Detail/{eventno}", response_class=HTMLResponse)
+async def event_detail(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
+    event_detail = await funchub.get_eventdetail(db, eventno)
+    return templates.TemplateResponse(request=request, name="class/event_detail.html", context={ "request": request, "event_dtl": event_detail })
 
 
 @app.get("/categoryDetail/{catno}", response_class=HTMLResponse)
@@ -393,6 +421,13 @@ async def classlists(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request, "class_list": class_list})
 
 
+@app.get("/event_list", response_class=HTMLResponse)
+async def eventlists(request: Request, db: AsyncSession = Depends(get_db)):
+    event_list = await funchub.get_eventlist(db)
+    return templates.TemplateResponse(request=request, name="class/event_list.html", context={
+        "request": request, "event_list": event_list})
+
+
 @app.get("/class_members/{classno}", response_class=HTMLResponse)
 async def classmembers(request: Request,classno:int ,db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
@@ -430,5 +465,46 @@ async def membertoclassminus(request: Request, classno: int, memberno: int, db: 
 @app.get("/getclassmembers/{classno}", response_class=JSONResponse)
 async def getclassmembers(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     rows = await funchub.get_classmemberlist(db, classno)
+    members = [funchub.row_to_dict(row) for row in rows]
+    return JSONResponse({"members": members})
+
+
+@app.get("/event_members/{eventno}", response_class=HTMLResponse)
+async def classmembers(request: Request,eventno:int ,db: AsyncSession = Depends(get_db)):
+    member_list = await funchub.get_memberlist(db)
+    cmember_list = await funchub.get_eventmemberlist(db, eventno)
+    return templates.TemplateResponse(request=request, name="class/event_members.html", context={
+        "request": request, "member_list": member_list, "classno": eventno, "cmember_list": cmember_list, "eventno": eventno})
+
+
+@app.post("/membertoevent/{eventno}/{memberno}")
+async def membertoevent(request: Request, eventno: int, memberno: int, db: AsyncSession = Depends(get_db)):
+    query = text(f"select * from chyEventmember where eventNo = :eventno and memberNo = :memberno")
+    result = await db.execute(query, {"eventno": eventno, "memberno": memberno})
+    if result.rowcount == 0:
+        query = text(f"INSERT into chyEventmember (eventNo, memberNo) values (:eventno, :memberno)")
+        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        await db.commit()
+        return JSONResponse({"result": "ok"})
+    else:
+        return JSONResponse({"result": "already"})
+
+
+@app.post("/membertoeventminus/{eventno}/{memberno}")
+async def membertoeventminus(request: Request, eventno: int, memberno: int, db: AsyncSession = Depends(get_db)):
+    query = text(f"select * from chyEventmember where eventNo = :eventno and memberNo = :memberno")
+    result = await db.execute(query, {"eventno": eventno, "memberno": memberno})
+    if result.rowcount != 0:
+        query = text(f"DELETE FROM chyEventmember where eventNo = :eventno and memberNo = :memberno")
+        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        await db.commit()
+        return JSONResponse({"result": "ok"})
+    else:
+        return JSONResponse({"result": "already"})
+
+
+@app.get("/geteventmembers/{eventno}", response_class=JSONResponse)
+async def geteventmembers(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
+    rows = await funchub.get_eventmemberlist(db, eventno)
     members = [funchub.row_to_dict(row) for row in rows]
     return JSONResponse({"members": members})
