@@ -114,7 +114,7 @@ async def favicon():
 async def login_form(request: Request):
     if request.session.get("user_No"):
         return RedirectResponse(url="/success", status_code=303)
-    return templates.TemplateResponse("login/login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login/login.html", context={"request": request})
 
 
 @app.post("/loginset")
@@ -134,8 +134,8 @@ async def login(
 
     if not user:
         return templates.TemplateResponse(
-            "login/login.html",
-            {"request": request, "error": "Invalid credentials"},
+            request=request, name="login/login.html",
+            context={"request": request, "error": "Invalid credentials"},
         )
 
     user_no = user[0]
@@ -156,8 +156,8 @@ async def login(
         authenticated = True
     if not authenticated:
         return templates.TemplateResponse(
-            "login/login.html",
-            {"request": request, "error": "Invalid credentials"},
+            request=request, name="login/login.html",
+            context={"request": request, "error": "Invalid credentials"},
         )
     request.session["user_No"] = user_no
     request.session["user_Name"] = user_name
@@ -190,7 +190,7 @@ async def change_password(
 
 @app.get("/success", response_class=HTMLResponse)
 async def success_page(request: Request):
-    return templates.TemplateResponse("main/index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="main/index.html", context={"request": request})
 
 
 @app.get("/logout")
@@ -202,21 +202,21 @@ async def logout(request: Request):
 @app.get("/rankList", response_class=HTMLResponse)
 async def rankList(request: Request, db: AsyncSession = Depends(get_db)):
     rank_list = await funchub.get_ranklist(db)
-    return templates.TemplateResponse("mst/mst_rank.html", {
+    return templates.TemplateResponse(request=request, name = "mst/mst_rank.html", context={
         "request": request, "rank_list": rank_list })
 
 
 @app.get("/memberList", response_class=HTMLResponse)
 async def memberList(request: Request, db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
-    return templates.TemplateResponse("mst/mst_member.html", {
+    return templates.TemplateResponse(request=request, name="mst/mst_member.html", context={
         "request": request, "member_list": member_list })
 
 
 @app.get("/categoryList", response_class=HTMLResponse)
 async def categoryList(request: Request, db: AsyncSession = Depends(get_db)):
     category_list = await funchub.get_catgorylist(db)
-    return templates.TemplateResponse("mst/mst_category.html", {
+    return templates.TemplateResponse(request=request, name="mst/mst_category.html", context={
         "request": request, "category_list": category_list })
 
 
@@ -299,39 +299,39 @@ async def update_category(request: Request, catno: int, db: AsyncSession = Depen
 @app.get("/rankDetail/{rankno}", response_class=HTMLResponse)
 async def rank_detail(request: Request, rankno: int, db: AsyncSession = Depends(get_db)):
     rank_detail = await funchub.get_rankdetail(db, rankno)
-    return templates.TemplateResponse("mst/edit_rank.html", { "request": request, "rank_dtl": rank_detail })
+    return templates.TemplateResponse(request=request, name="mst/edit_rank.html", context={ "request": request, "rank_dtl": rank_detail })
 
 
 @app.get("/classList", response_class=HTMLResponse)
 async def classList(request: Request, db: AsyncSession = Depends(get_db)):
     class_list = await funchub.get_classlist(db)
-    return templates.TemplateResponse("mst/mst_class.html", {
+    return templates.TemplateResponse(request=request, name="mst/mst_class.html", context={
         "request": request, "class_list": class_list })
 
 
 @app.get("/classDetail/{classno}", response_class=HTMLResponse)
 async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     class_detail = await funchub.get_classdetail(db, classno)
-    return templates.TemplateResponse("mst/edit_class.html", { "request": request, "class_dtl": class_detail })
+    return templates.TemplateResponse(request=request, name="mst/edit_class.html", context={ "request": request, "class_dtl": class_detail })
 
 
 @app.get("/class_Detail/{classno}", response_class=HTMLResponse)
 async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     class_detail = await funchub.get_classdetail(db, classno)
-    return templates.TemplateResponse("class/class_detail.html", { "request": request, "class_dtl": class_detail })
+    return templates.TemplateResponse(request=request, name="class/class_detail.html", context={ "request": request, "class_dtl": class_detail })
 
 
 @app.get("/categoryDetail/{catno}", response_class=HTMLResponse)
 async def category_detail(request: Request, catno: int, db: AsyncSession = Depends(get_db)):
     category_detail = await funchub.get_categorydetail(db, catno)
-    return templates.TemplateResponse("mst/edit_category.html", { "request": request, "category_dtl": category_detail })
+    return templates.TemplateResponse(request=request, name="mst/edit_category.html", context={ "request": request, "category_dtl": category_detail })
 
 
 @app.get("/memberDetail/{memberno}", response_class=HTMLResponse)
 async def member_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
     member_detail = await funchub.get_memberdetail(db, memberno)
     categories = await funchub.get_categorybytype(db, 'MBIFO')
-    return templates.TemplateResponse("mst/edit_member.html", { "request": request, "member_dtl": member_detail, "categories": categories })
+    return templates.TemplateResponse(request=request, name="mst/edit_member.html", context={ "request": request, "member_dtl": member_detail, "categories": categories })
 
 
 @app.get("/api/member/{memberno}/midtl")
@@ -389,7 +389,7 @@ async def updatemember(request: Request, memberno: int, db: AsyncSession = Depen
 @app.get("/class_list", response_class=HTMLResponse)
 async def classlists(request: Request, db: AsyncSession = Depends(get_db)):
     class_list = await funchub.get_classlist(db)
-    return templates.TemplateResponse("class/class_list.html", {
+    return templates.TemplateResponse(request=request, name="class/class_list.html", context={
         "request": request, "class_list": class_list})
 
 
@@ -397,7 +397,7 @@ async def classlists(request: Request, db: AsyncSession = Depends(get_db)):
 async def classmembers(request: Request,classno:int ,db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
     cmember_list = await funchub.get_classmemberlist(db, classno)
-    return templates.TemplateResponse("class/class_members.html", {
+    return templates.TemplateResponse(request=request, name="class/class_members.html", context={
         "request": request, "member_list": member_list, "classno": classno, "cmember_list": cmember_list})
 
 

@@ -48,15 +48,15 @@
                     <div style="float:right"></div>
                     <table class="table" id="ranklist">
                         <thead style="text-align: center">
-                        <th>기수명칭</th>
+                        <th>기수명칭(회원수)</th>
                         <th>회원관리</th>
                         <th>공지관리</th>
                         </thead>
                         {% for class in class_list %}
                         <tr style="text-align: center">
-                            <td><a href="/class_Detail/{{class[0]}}">{{ class[1] }}</a></td>
-                            <td><a href="/class_members/{{class[0]}}">회원관리</td>
-                            <td><a href="/class_notice/{{class[0]}}">공지관리</td>
+                            <td><a href="/class_Detail/{{class[0]}}">{{ class[1] }} ( {{ class["memberCount"] }} 명)</a></td>
+                            <td><a href="/class_members/{{class[0]}}">회원관리</a></td>
+                            <td><a href="#/class_notice/{{class[0]}}">공지관리</a></td>
                         </tr>
                         {% endfor %}
                     </table>

@@ -134,7 +134,7 @@ async def get_catgorylist(db: AsyncSession):
 
 async def get_classlist(db: AsyncSession):
     try:
-        query = text("SELECT * FROM chyClass where attrib not like :attpatt")
+        query = text("SELECT a.*, COUNT(b.memberNo) AS memberCount FROM chyClass a LEFT JOIN chyClassmember b ON a.classNo = b.classNo where a.attrib not like :attpatt GROUP BY a.classNo")
         result = await db.execute(query, {"attpatt": "%XXX%"})
         return result.fetchall()
     except Exception:
