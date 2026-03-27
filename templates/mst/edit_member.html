@@ -145,6 +145,10 @@
                                 <a class="nav-link" id="tab-award" data-toggle="tab" href="#pane-award"
                                    role="tab">수상경력</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="tab-cnc" data-toggle="tab" href="#pane-cnc"
+                                   role="tab">경조사항</a>
+                            </li>
                         </ul>
 
                         <div class="tab-content border-left border-right border-bottom p-3" id="memberTabsContent">
@@ -242,7 +246,7 @@
                                             <td style="width:30%;">
                                                 <select class="form-control" id="mdtlcat" name="dtlcat">
                                                     <option value="">추가할 항목 선택</option>
-                                                    {% for cat in categories %}
+                                                    {% for cat in category1 %}
                                                     <option value="{{cat[0]}}">{{cat[1]}}</option>
                                                     {% endfor %}
                                                 </select>
@@ -316,6 +320,7 @@
                                 </form>
                             </div>
                             <!-- 상벌사항 -->
+                            <!-- 상벌사항 -->
                             <div class="tab-pane fade" id="pane-award" role="tabpanel" aria-labelledby="tab-award">
                                 <form method="POST" id="prize-form" action="/insert_PRIZE/{{member_dtl[0]}}/">
                                     <table class="table table-bordered text-center">
@@ -323,18 +328,20 @@
                                         <tr>
                                             <td style="width:20%;">
                                                 <select class="form-control" id="prizecat" name="prizecat">
+                                                    <option value="">추가할 항목 선택</option>
+                                                    {% for cat in category2 %}
+                                                    <option value="{{cat[0]}}">{{cat[1]}}</option>
+                                                    {% endfor %}
                                                 </select>
                                             </td>
                                             <td style="width:20%;">
                                                 <input class="form-control" id="prizedate" name="prizedate" type="date">
                                             </td>
-                                            <td style="width:70%;">
+                                            <td style="width:60%;">
                                                 <div class="d-flex align-items-center">
-                                                    <input class="form-control mr-2" id="prizecont" name="prizecont"
-                                                           type="text" value="">
-                                                    <button type="submit" class="btn btn-primary"
-                                                            style="white-space:nowrap;">저장
-                                                    </button>
+                                                    <input class="form-control mr-2" id="eventno" name="eventno" type="number" placeholder="행사번호" style="width: 30%;">
+                                                    <input class="form-control mr-2" id="prizecont" name="prizecont" type="text" placeholder="수상 내용 입력" value="" style="width: 70%;">
+                                                    <button type="button" id="btn-save-prize" class="btn btn-primary" style="white-space:nowrap;">저장</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -347,15 +354,56 @@
                                     <tr>
                                         <th>수상내역</th>
                                         <th>수상일자</th>
-                                        <th>수상행사</th>
+                                        <th>관련행사(번호)</th>
                                         <th>내용</th>
                                     </tr>
                                     </thead>
                                     <tbody id="prize-tbody">
-
                                     </tbody>
                                 </table>
                             </div>
+
+                            <div class="tab-pane fade" id="pane-cnc" role="tabpanel" aria-labelledby="tab-cnc">
+                                <form method="POST" id="cnc-form" action="/insert_CNC/{{member_dtl[0]}}/">
+                                    <table class="table table-bordered text-center">
+                                        <tbody>
+                                        <tr>
+                                            <td style="width:20%;">
+                                                <select class="form-control" id="cnccat" name="cnccat">
+                                                    <option value="">추가할 항목 선택</option>
+                                                    {% for cat in category3 %}
+                                                    <option value="{{cat[0]}}">{{cat[1]}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td style="width:20%;">
+                                                <input class="form-control" id="cncdate" name="cncdate" type="date">
+                                            </td>
+                                            <td style="width:60%;">
+                                                <div class="d-flex align-items-center">
+                                                    <input class="form-control mr-2" id="cnccont" name="cnccont" type="text" placeholder="경조 내용 입력" value="" style="width: 70%;">
+                                                    <button type="button" id="btn-save-cnc" class="btn btn-primary" style="white-space:nowrap;">저장</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                                <!-- 저장된 상세정보 목록 -->
+                                <table class="table table-bordered text-center mt-3" id="cnc-table">
+                                    <thead>
+                                    <tr>
+                                        <th>경조종류</th>
+                                        <th>경조일자</th>
+                                        <th>금액</th>
+                                        <th>내용</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="cnc-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -396,139 +444,152 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
 <script>
+    const MEMBER_NO = "{{ member_dtl[0] }}";
 
-    $(document).ready(function () {
-        $('.selectpicker').selectpicker({
-            style: 'btn-inverse',
-            size: 20
+    // ==========================================
+    // 1. 부가정보(Detail) 관련 함수 및 이벤트
+    // ==========================================
+    function renderDetailRows(rows) {
+        const tbody = document.getElementById("detail-tbody");
+        tbody.innerHTML = "";
+        rows.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-id", row.id);
+            tr.setAttribute("data-catno", row.catNo);
+            tr.innerHTML = `
+                <td>${row.catTitle}</td>
+                <td>${row.infoContents}</td>
+                <td>${row.regDate || ""}</td>
+            `;
+            tbody.appendChild(tr);
         });
-    });
-    $('.selectpicker').selectpicker('refresh');
+    }
 
-    function displayFileInfo(input) {
-        const file = input.files[0];
-        const fileSizeElement = document.getElementById("fileSize");
-        const previewElement = document.getElementById("imagePreview");
-        if (file) {
-            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2); // MB로 변환
-            fileSizeElement.textContent = `Selected file size: ${sizeInMB} MB`;
-            // 이미지 미리보기
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                previewElement.src = e.target.result;
-                previewElement.style.display = "block"; // 이미지 보이기
-            };
-            reader.readAsDataURL(file);
-        } else {
-            fileSizeElement.textContent = "";
-            previewElement.style.display = "none"; // 이미지 숨기기
+    async function refreshDetailTable() {
+        const res = await fetch(`/api/member/${MEMBER_NO}/midtl`, {
+            headers: {"X-Requested-With": "XMLHttpRequest"}
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            alert(data.message || "목록 조회 실패");
+            return;
         }
+        renderDetailRows(data.rows || []);
     }
 
-</script>
-<script>
-  const MEMBER_NO = "{{ member_dtl[0] }}";
+    document.getElementById('detail-form')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-  function renderDetailRows(rows) {
-    const tbody = document.getElementById("detail-tbody");
-    tbody.innerHTML = "";
-    rows.forEach(row => {
-      const tr = document.createElement("tr");
-      tr.setAttribute("data-id", row.id);
-      tr.setAttribute("data-catno", row.catNo);
-      tr.innerHTML = `
-        <td>${row.catTitle}</td>
-        <td>${row.infoContents}</td>
-        <td>${row.regDate || ""}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+        const form = e.target;
+        const formData = new FormData(form);
 
-  // ✅ 수상내역용 렌더러 (prize-tbody를 갱신)
-  function renderPrizeRows(rows) {
-    const tbody = document.getElementById("prize-tbody");
-    tbody.innerHTML = "";
-    rows.forEach(row => {
-      const tr = document.createElement("tr");
-      tr.setAttribute("data-id", row.id);
+        const res = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {"X-Requested-With": "XMLHttpRequest"}
+        });
 
-      tr.innerHTML = `
-        <td>${row.prizeTitle || ""}</td>
-        <td>${row.prizeDate || ""}</td>
-        <td>${row.eventTitle || ""}</td>
-        <td>${row.prizeMemo || ""}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            alert(data.message || "저장 실패");
+            return;
+        }
 
-  async function refreshDetailTable() {
-    const res = await fetch(`/api/member/${MEMBER_NO}/midtl`, {
-      headers: {"X-Requested-With": "XMLHttpRequest"}
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      alert(data.message || "목록 조회 실패");
-      return;
-    }
-    renderDetailRows(data.rows || []);
-  }
+        // 입력창 비우기
+        form.querySelector('input[name="dtlcont"]').value = "";
 
-
-  document.getElementById('prize-form')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const formData = new FormData(form);
-
-    const res = await fetch(form.action, {
-      method: 'POST',
-      body: formData,
-      headers: {"X-Requested-With": "XMLHttpRequest"}
+        // 테이블 갱신
+        await refreshDetailTable();
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      alert(data.message || "저장 실패");
-      return;
+    // ==========================================
+    // 2. 상벌사항(Prize) 관련 함수 및 이벤트
+    // ==========================================
+    function renderPrizeRows(rows) {
+        const tbody = document.getElementById("prize-tbody");
+        tbody.innerHTML = "";
+        rows.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-id", row.id);
+
+            tr.innerHTML = `
+                <td>${row.prizeTitle || ""}</td>
+                <td>${row.prizeDate || ""}</td>
+                <td>${row.eventNo || ""}</td>
+                <td>${row.prizeMemo || ""}</td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
-    form.querySelector('input[name="prizecont"]').value = "";
-    await refreshPrizeTable();
-  });
-
-  // 탭 이벤트는 한 번만 등록해서 처리하는 걸 추천
-  $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-    if (e.target && e.target.id === 'tab-detail') refreshDetailTable();
-    if (e.target && e.target.id === 'tab-award')  refreshPrizeTable();
-    $('.selectpicker').selectpicker('refresh');
-  });
-
-  document.getElementById('detail-form')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const formData = new FormData(form);
-
-    const res = await fetch(form.action, {
-      method: 'POST',
-      body: formData,
-      headers: {"X-Requested-With": "XMLHttpRequest"}
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      alert(data.message || "저장 실패");
-      return;
+    async function refreshPrizeTable() {
+        const res = await fetch(`/api/member/${MEMBER_NO}/prize`, {
+            headers: {"X-Requested-With": "XMLHttpRequest"}
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            alert(data.message || "상벌사항 목록 조회 실패");
+            return;
+        }
+        renderPrizeRows(data.rows || []);
     }
 
-    // 입력창 비우기
-    form.querySelector('input[name="dtlcont"]').value = "";
+        // ✅ 상벌사항 저장 버튼 클릭 이벤트 (더블클릭 방지 및 폼 기본전송 차단)
+    document.getElementById('btn-save-prize')?.addEventListener('click', async function () {
+        const form = document.getElementById('prize-form');
+        const formData = new FormData(form);
 
-    // 테이블 갱신
-    await refreshDetailTable();
-  });
+        // 필수 입력값 체크 (예외 처리)
+        if (!formData.get('prizecat') || !formData.get('prizecont')) {
+            alert("상벌 항목과 내용을 입력해 주세요.");
+            return;
+        }
+
+        // 1. 중복 클릭 방지를 위해 버튼 비활성화
+        this.disabled = true;
+        this.innerText = "저장 중...";
+
+        try {
+            const res = await fetch(`/insert_PRIZE/${MEMBER_NO}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {"X-Requested-With": "XMLHttpRequest"}
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                alert(data.message || "저장 실패");
+                return;
+            }
+
+            // 2. 저장 성공 시 입력창 비우기
+            form.querySelector('input[name="prizecont"]').value = "";
+            form.querySelector('input[name="eventno"]').value = "";
+            form.querySelector('input[name="prizedate"]').value = "";
+
+            // 3. 테이블 갱신
+            await refreshPrizeTable();
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("서버 통신 중 오류가 발생했습니다.");
+        } finally {
+            // 4. 처리가 끝나면 버튼 다시 활성화
+            this.disabled = false;
+            this.innerText = "저장";
+        }
+    });
+
+
+    // ==========================================
+    // 3. 탭 전환 이벤트 (공통)
+    // ==========================================
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        if (e.target && e.target.id === 'tab-detail') refreshDetailTable();
+        if (e.target && e.target.id === 'tab-award') refreshPrizeTable();
+        $('.selectpicker').selectpicker('refresh');
+    });
+
 </script>
 </body>
 </html>

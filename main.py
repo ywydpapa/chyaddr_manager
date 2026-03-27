@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-import dotenv
+from PIL import Image
 import jwt
 from fastapi import (
     FastAPI,
@@ -131,18 +131,15 @@ async def login(
     )
     result = await db.execute(query, {"username": username})
     user = result.fetchone()
-
     if not user:
         return templates.TemplateResponse(
             request=request, name="login/login.html",
             context={"request": request, "error": "Invalid credentials"},
         )
-
     user_no = user[0]
     user_name = user[1]
     user_role = user[2]
     stored_password = user[3] or ""
-
     authenticated = False
     try:
         authenticated = verify_password(password, stored_password)
@@ -176,15 +173,12 @@ async def change_password(
         user_no = data["uno"]
     except KeyError:
         raise HTTPException(status_code=400, detail="passwd 또는 uno 값이 없습니다.")
-
     if not isinstance(raw_password, str) or not raw_password.strip():
         raise HTTPException(status_code=400, detail="비밀번호가 올바르지 않습니다.")
-
     hashed_password = get_password_hash(raw_password)
     sql = text("UPDATE chyUser SET userPasswd = :passwd WHERE userNo = :userno")
     await db.execute(sql, {"passwd": hashed_password, "userno": user_no})
     await db.commit()
-
     return {"result": "success"}
 
 
@@ -228,6 +222,16 @@ async def add_rank(request: Request, db: AsyncSession = Depends(get_db)):
                      {"rankTitlekor": "새로 등록된 직책", "rankTitleeng": "New Rank", "rankType": "CLASS", "orderNo": "0"})
     await db.commit()
     return RedirectResponse(f"/rankList", status_code=303)
+
+
+@app.get("/add_company", response_class=HTMLResponse)
+async def add_company(request: Request, db: AsyncSession = Depends(get_db)):
+    query = text(
+        "INSERT INTO chyCompany (compName, compNameeng, compType, vatNo) values (:compname, :compnameeng, :comptype, :vatno)")
+    await db.execute(query,
+                     {"compname": "새로 등록된 거래처", "compnameeng": "New Company", "comptype": "TRADE", "vatno": "000-00-00000"})
+    await db.commit()
+    return RedirectResponse(f"/companyList", status_code=303)
 
 
 @app.get("/add_category", response_class=HTMLResponse)
@@ -294,6 +298,18 @@ async def update_class(request: Request, classno: int, db: AsyncSession = Depend
     return RedirectResponse(f"/classDetail/{classno}?msg=success", status_code=303)
 
 
+@app.post("/update_comp/{compno}", response_class=HTMLResponse)
+async def update_comp(request: Request, compno: int, db: AsyncSession = Depends(get_db)):
+    form_data = await request.form()
+    data4update = {
+        "compNo": compno, "compName": form_data.get("compkor"),"compNameeng": form_data.get("compeng"), "vatNo": form_data.get("vatno"),
+        "compType": form_data.get("comptype"),"useYn": form_data.get("useyn"), "bizType": form_data.get("biztype"),}
+    query = text("UPDATE chyCompany SET compName = :compName, compNameeng = :compNameeng, vatNo = :vatNo, compType = :compType, useYn = :useYn, bizType = :bizType WHERE compNo = :compNo")
+    await db.execute(query, data4update)
+    await db.commit()
+    return RedirectResponse(f"/companyDetail/{compno}?msg=success", status_code=303)
+
+
 @app.post("/update_event/{eventno}", response_class=HTMLResponse)
 async def update_event(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
     form_data = await request.form()
@@ -331,6 +347,13 @@ async def classList(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request, "class_list": class_list })
 
 
+@app.get("/companyList", response_class=HTMLResponse)
+async def companyList(request: Request, db: AsyncSession = Depends(get_db)):
+    comp_list = await funchub.get_companylist(db)
+    return templates.TemplateResponse(request=request, name="mst/mst_company.html", context={
+        "request": request, "comp_list": comp_list })
+
+
 @app.get("/classDetail/{classno}", response_class=HTMLResponse)
 async def rank_detail(request: Request, classno: int, db: AsyncSession = Depends(get_db)):
     class_detail = await funchub.get_classdetail(db, classno)
@@ -355,11 +378,19 @@ async def category_detail(request: Request, catno: int, db: AsyncSession = Depen
     return templates.TemplateResponse(request=request, name="mst/edit_category.html", context={ "request": request, "category_dtl": category_detail })
 
 
+@app.get("/companyDetail/{compno}", response_class=HTMLResponse)
+async def company_detail(request: Request, compno: int, db: AsyncSession = Depends(get_db)):
+    comp_detail = await funchub.get_companydetail(db, compno)
+    return templates.TemplateResponse(request=request, name="mst/edit_company.html", context={ "request": request, "comp_dtl": comp_detail })
+
+
 @app.get("/memberDetail/{memberno}", response_class=HTMLResponse)
 async def member_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
     member_detail = await funchub.get_memberdetail(db, memberno)
-    categories = await funchub.get_categorybytype(db, 'MBIFO')
-    return templates.TemplateResponse(request=request, name="mst/edit_member.html", context={ "request": request, "member_dtl": member_detail, "categories": categories })
+    category1 = await funchub.get_categorybytype(db, 'MBIFO')
+    category2 = await funchub.get_categorybytype(db, 'MPRIZ')
+    category3 = await funchub.get_categorybytype(db, 'MBCNC')
+    return templates.TemplateResponse(request=request, name="mst/edit_member.html", context={ "request": request, "member_dtl": member_detail, "category1": category1, "category2": category2, "category3": category3 })
 
 
 @app.get("/api/member/{memberno}/midtl")
@@ -385,6 +416,7 @@ async def insert_midt_detail(request: Request, memberno: int, db: AsyncSession =
         return JSONResponse({"ok": True, "row": dict(row) if row else None}) if is_ajax else RedirectResponse(url=request.headers.get("referer", "/"), status_code=303)
     except Exception as e:
         return JSONResponse({"ok": False, "message": str(e)}, status_code=500)
+
 
 
 @app.post("/uploadcmphoto/{memberno}", dependencies=[Depends(get_current_user)])
@@ -508,3 +540,171 @@ async def geteventmembers(request: Request, eventno: int, db: AsyncSession = Dep
     rows = await funchub.get_eventmemberlist(db, eventno)
     members = [funchub.row_to_dict(row) for row in rows]
     return JSONResponse({"members": members})
+
+
+@app.get("/api/member/{memberno}/prize")
+async def api_member_prize_list(memberno: int, request: Request, db: AsyncSession = Depends(get_db),
+                                user_no: int = Depends(get_current_user)):
+    query = """
+            SELECT p.mpNo                               as id, \
+                   p.prizeNo, \
+                   c.catTitle                           as prizeTitle,
+                   DATE_FORMAT(p.prizeDate, '%Y-%m-%d') AS prizeDate,
+                   p.eventNo,
+                   p.prizeMemo
+            FROM chyMemberprize p
+                     JOIN chyCategory c ON c.catNo = p.prizeNo
+            WHERE p.memberNo = :mno \
+              AND p.attrib = :xapp
+            ORDER BY p.prizeDate DESC, p.prizeNo ASC \
+            """
+    result = await db.execute(text(query), {"mno": memberno, "xapp": "1000010000"})
+    return {"ok": True, "rows": [dict(r._mapping) for r in result.fetchall()]}
+
+@app.post("/insert_PRIZE/{memberno}/")
+async def insert_prize_detail(request: Request, memberno: int, db: AsyncSession = Depends(get_db)):
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    if not request.session.get("user_No"):
+        return JSONResponse({"ok": False, "message": "login required"},
+                            status_code=401) if is_ajax else RedirectResponse(url="/", status_code=303)
+    form = await request.form()
+    prize_no = to_int(form.get("prizecat"), 0)
+    prize_date = form.get("prizedate")
+    prize_memo = (form.get("prizecont") or "").strip()
+    event_no = to_int(form.get("eventno"), 0)  # eventNo가 숫자형(INT)이라고 가정
+
+    if prize_no <= 0 or prize_memo == "":
+        return JSONResponse({"ok": False, "message": "invalid input"}, status_code=400)
+
+    try:
+        async with db.begin():
+            insert_query = """
+                           INSERT INTO chyMemberprize (memberNo, prizeNo, prizeDate, prizeMemo, eventNo, attrib, regDate)
+                           VALUES (:mno, :pno, :pdate, :pmemo, :eno, :xapp, NOW()) \
+                           """
+            result = await db.execute(text(insert_query), {
+                "mno": memberno, "pno": prize_no, "pdate": prize_date, "pmemo": prize_memo, "eno": event_no,
+                "xapp": "1000010000"
+            })
+            select_query = """
+                           SELECT p.mpNo                               as id, \
+                                  p.memberNo, \
+                                  p.prizeNo, \
+                                  c.catTitle                           as prizeTitle,
+                                  DATE_FORMAT(p.prizeDate, '%Y-%m-%d') AS prizeDate,
+                                  p.eventNo,
+                                  p.prizeMemo
+                           FROM chyMemberprize p
+                                    JOIN chyCategory c ON c.catNo = p.prizeNo
+                           WHERE p.mpNo = :id \
+                           """
+            row = (await db.execute(text(select_query), {"id": result.lastrowid})).mappings().first()
+        return JSONResponse({"ok": True, "row": dict(row) if row else None}) if is_ajax else RedirectResponse(
+            url=request.headers.get("referer", "/"), status_code=303)
+    except Exception as e:
+        return JSONResponse({"ok": False, "message": str(e)}, status_code=500)
+
+@app.get("/api/ephoto/events")
+async def get_ephoto_events(db: AsyncSession = Depends(get_db)):
+    photo_dir = Path("static/img/event")
+    if not photo_dir.exists():
+        return JSONResponse([])
+    event_nos = set()
+    for file in photo_dir.iterdir():
+        if file.is_file() and "-" in file.name:
+            try:
+                event_no = int(file.name.split("-")[0])
+                event_nos.add(event_no)
+            except ValueError:
+                continue
+    if not event_nos:
+        return JSONResponse([])
+    query = text("""
+                 SELECT a.eventNo, eventFrom , a.eventTitle ,a.eventPlace
+                 FROM chyEvent a
+                 WHERE a.eventNo IN :event_nos
+                 ORDER BY a.eventFrom DESC
+                 """)
+    result = await db.execute(query, {"event_nos": tuple(event_nos)})
+    rows = result.fetchall()
+    events = []
+    for row in rows:
+        dt = row[1]
+        dt_str = dt.strftime("%Y-%m-%d") if hasattr(dt, "strftime") else str(dt)
+        name = row[2] or "알 수 없음"
+        events.append({
+            "eventNo": row[0],
+            "label": f"[{dt_str}] {name} (행사번호: {row[0]}), (행사장소: {row[3]})",
+        })
+    return JSONResponse(events)
+
+
+@app.get("/photo_album", response_class=HTMLResponse)
+async def photoalbum(request: Request,db: AsyncSession = Depends(get_db)):
+    return templates.TemplateResponse(request=request, name="event/manage_photo.html", context={
+        "request": request})
+
+
+@app.get("/photo_upload", response_class=HTMLResponse)
+async def photoupload(request: Request,db: AsyncSession = Depends(get_db)):
+    return templates.TemplateResponse(request=request, name="event/upload_photo.html", context={
+        "request": request})
+
+
+@app.get("/api/ephoto/photos/{event_no}")
+async def get_ephoto_photos(event_no: int):
+    photo_dir = Path("static/img/event")
+    if not photo_dir.exists():
+        return JSONResponse([])
+
+    photos = []
+    for file in photo_dir.glob(f"{event_no}-*.*"):
+        if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+            photos.append({
+                "filename": file.name,
+                "url": f"/static/img/event/{file.name}"
+            })
+    photos.sort(key=lambda x: x["filename"])
+    return JSONResponse(photos)
+
+
+@app.post("/api/ephoto/photos/{filename}/rotate")
+async def rotate_ephoto(filename: str):
+    file_path = Path("static/img/event") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        with Image.open(file_path) as img:
+            rotated = img.transpose(Image.ROTATE_270)
+            rotated.save(file_path)
+
+        import time
+        return JSONResponse({
+            "success": True,
+            "url": f"/static/img/event/{filename}?t={int(time.time())}"
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/ephoto/photos/{filename}")
+async def delete_ephoto(filename: str):
+    file_path = Path("static/img/event") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        file_path.unlink()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/get_event")
+async def get_event(db: AsyncSession = Depends(get_db)):
+    try:
+        rows = await funchub.get_eventlist(db)
+        result = [{"eventNo": row[0], "eventFrom": row[5], "eventTitle": row[1]} for row in rows]
+    except Exception as e:
+        result = []
+    return {"events": result}
+

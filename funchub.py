@@ -150,6 +150,15 @@ async def get_eventlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
 
 
+async def get_companylist(db: AsyncSession):
+    try:
+        query = text("SELECT a.* FROM chyCompany a where a.attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(COMPANY_LIST)")
+
+
 async def get_rankdetail(db: AsyncSession, rankno: int):
     try:
         query = text("SELECT * FROM chyRank where rankNo = :rankno")
@@ -184,6 +193,15 @@ async def get_categorydetail(db: AsyncSession, catno: int):
         return result.fetchone()
     except Exception:
         raise HTTPException(status_code=500, detail="Database query failed(CATEGORY_DETAIL)")
+
+
+async def get_companydetail(db: AsyncSession, compno: int):
+    try:
+        query = text("SELECT * FROM chyCompany where compNo = :compno")
+        result = await db.execute(query, {"compno": compno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(COMPANY_DETAIL)")
 
 
 async def get_categorybytype(db: AsyncSession, catType: str):
