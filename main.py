@@ -22,9 +22,10 @@ from sqlalchemy.orm import sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 import dotenv
 from starlette.responses import JSONResponse
-
+from datetime import datetime, timedelta
 import funchub
 from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_password, get_current_user
+from typing import Optional
 
 dotenv.load_dotenv()
 
@@ -255,13 +256,31 @@ async def add_member(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/add_event", response_class=HTMLResponse)
-async def add_event(request: Request, db: AsyncSession = Depends(get_db)):
-    query = text(
-        "INSERT INTO chyEvent (eventTitle, eventPlace) values (:etitle, :eplace)")
-    await db.execute(query,
-                     {"etitle": "새로 등록된 Event", "eplace": "미정"})
+async def add_event(
+        request: Request,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        db: AsyncSession = Depends(get_db)
+):
+    if start and end:
+        start_time = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+    else:
+        now = datetime.now()
+        start_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        end_time = start_time + timedelta(hours=3)
+    query = text("""
+                 INSERT INTO chyEvent (eventTitle, eventPlace, eventFrom, eventTo)
+                 VALUES (:etitle, :eplace, :efrom, :eto)
+                 """)
+    await db.execute(query, {
+        "etitle": "새로 등록된 Event",
+        "eplace": "미정",
+        "efrom": start_time,
+        "eto": end_time
+    })
     await db.commit()
-    return RedirectResponse(f"/event_list", status_code=303)
+    return RedirectResponse(url="/event_list", status_code=303)
 
 
 @app.get("/add_class", response_class=HTMLResponse)

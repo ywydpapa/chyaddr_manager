@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 
 <head>
 
@@ -9,16 +9,36 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>충효예대학 원우관리</title>
+    <title>충효예대학 원우관리 - 행사 관리</title>
 
     <!-- Custom fonts for this template-->
     <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link
-            href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-            rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
 
     <!-- Custom styles for this template-->
     <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <!-- FullCalendar CDN 추가 -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <style>
+        /* 달력 이벤트(일정) 텍스트 색상 및 커서 설정 */
+        .fc-event {
+            cursor: pointer;
+        }
+        .fc-event-title {
+            font-weight: bold;
+        }
+        /* 커스텀 버튼 색상 변경 */
+        .fc-addEventButton-button {
+            background-color: #4e73df !important;
+            border-color: #4e73df !important;
+            font-weight: bold !important;
+        }
+        .fc-addEventButton-button:hover {
+            background-color: #2e59d9 !important;
+            border-color: #264bce !important;
+        }
+    </style>
 
 </head>
 
@@ -39,29 +59,59 @@
 
             <!-- Begin Page Content -->
             <div class="container-fluid">
+
                 <!-- Page Heading -->
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4 class="h3 mb-4 text-gray-800">행사 관리</h4>
+                <div style="display: flex; align-items: center; justify-content: space-between;" class="mb-4">
+                    <h4 class="h3 mb-0 text-gray-800">행사 관리</h4>
                     <a href="/add_event" class="btn btn-primary" id="newmember" role="button" style="flex: 0 0 auto;">행사 추가</a>
                 </div>
-                <div>
-                    <div style="float:right"></div>
-                    <table class="table" id="ranklist">
-                        <thead style="text-align: center">
-                        <th>행사명칭(참가회원수)</th>
-                        <th>참가회원</th>
-                        <th>지원관리</th>
-                        </thead>
-                        {% for item in event_list %}
-                        <tr style="text-align: center">
-                            <td><a href="/event_Detail/{{item[0]}}">{{ item[1] }} ( {{ item["memberCount"] }} 명)</a></td>
-                            <td><a href="/event_members/{{item[0]}}">회원관리</a></td>
-                            <td><a href="#/event_notice/{{item[0]}}">행사지원관리</a></td>
-                        </tr>
-                        {% endfor %}
-                    </table>
+
+                <!-- Card 영역 -->
+                <div class="card shadow mb-4">
+                    <!-- 헤더 영역: 제목과 토글 스위치를 양끝으로 배치 -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">행사 목록 및 일정</h6>
+                        <!-- 달력 보기 토글 스위치 -->
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="viewToggle">
+                            <label class="custom-control-label" for="viewToggle">달력 보기</label>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- 1. 리스트 뷰 영역 -->
+                        <div id="listView">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="ranklist" width="100%" cellspacing="0">
+                                    <thead class="bg-light" style="text-align: center">
+                                        <tr>
+                                            <th>행사명칭(참가회원수)</th>
+                                            <th>참가회원</th>
+                                            <th>지원관리</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in event_list %}
+                                        <tr style="text-align: center">
+                                            <td><a href="/event_Detail/{{item[0]}}" class="font-weight-bold">{{ item[1] }} ( {{ item["memberCount"] }} 명)</a></td>
+                                            <td><a href="/event_members/{{item[0]}}" class="btn btn-sm btn-info">회원관리</a></td>
+                                            <td><a href="#/event_notice/{{item[0]}}" class="btn btn-sm btn-secondary">행사지원관리</a></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 2. 달력 뷰 영역 (초기에는 숨김 처리) -->
+                        <div id="calendarView" style="display: none;">
+                            <div id="calendar"></div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
+            <!-- /.container-fluid -->
         </div>
         <!-- End of Main Content -->
 
@@ -84,15 +134,15 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                <h5 class="modal-title" id="exampleModalLabel">로그아웃 하시겠습니까?</h5>
                 <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">×</span>
                 </button>
             </div>
-            <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+            <div class="modal-body">현재 세션을 종료하시려면 아래의 "로그아웃" 버튼을 클릭하세요.</div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <a class="btn btn-primary" href="/logout">Logout</a>
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">취소</button>
+                <a class="btn btn-primary" href="/logout">로그아웃</a>
             </div>
         </div>
     </div>
@@ -100,6 +150,137 @@
 
 <!-- Bootstrap core JavaScript-->
 {% include 'common/adscript.html' %}
+
+<script>
+    var calendar;
+    var clickTimer = null; // 더블클릭 판별을 위한 타이머 변수
+
+    // 날짜 포맷팅 함수 (YYYY-MM-DD HH:mm:ss)
+    function formatDateTime(date) {
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        var h = String(date.getHours()).padStart(2, '0');
+        var min = String(date.getMinutes()).padStart(2, '0');
+        var s = String(date.getSeconds()).padStart(2, '0');
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+    }
+
+    // Jinja2 데이터를 FullCalendar 이벤트 배열로 변환
+    var allEvents = [
+        {% for item in event_list %}
+        {
+            id: '{{ item[0] }}',
+            title: '{{ item[1] }}',
+            start: '{{ item.eventFrom }}',
+            end: '{{ item.eventTo }}',
+            extendedProps: {
+                detailUrl: '/event_Detail/{{ item[0] }}',
+                memberUrl: '/event_members/{{ item[0] }}'
+            },
+            backgroundColor: '#1cc88a',
+            borderColor: '#1cc88a',
+            textColor: '#ffffff'
+        },
+        {% endfor %}
+    ];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            customButtons: {
+                addEventButton: {
+                    text: '행사 추가',
+                    click: function () {
+                        window.location.href = '/add_event';
+                    }
+                }
+            },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'addEventButton dayGridMonth,dayGridWeek'
+            },
+            events: allEvents,
+
+            // ★ 추가된 부분: 달력에서 날짜를 드래그하거나 클릭할 수 있도록 활성화
+            selectable: true,
+
+            // ★ 변경된 부분: 드래그(또는 클릭) 완료 시 발생하는 이벤트
+            select: function(info) {
+                var startDate = new Date(info.start);
+                var endDate = new Date(info.end);
+
+                // FullCalendar의 select 이벤트에서 end 날짜는 선택한 마지막 날의 '다음날 00:00'을 가리킵니다.
+                // 따라서 실제 사용자가 드래그한 마지막 날짜를 구하기 위해 하루를 빼줍니다.
+                endDate.setDate(endDate.getDate() - 1);
+
+                var now = new Date();
+                var startHour = now.getHours() + 1;
+
+                // 시작일의 시간 설정 (현재 시간 기준 1시간 뒤 정각)
+                startDate.setHours(startHour, 0, 0, 0);
+
+                // 종료일의 시간 설정 (시작 시간 + 3시간 뒤 정각)
+                endDate.setHours(startHour + 3, 0, 0, 0);
+
+                var startStr = formatDateTime(startDate);
+                var endStr = formatDateTime(endDate);
+
+                var msg = "선택한 기간으로 새 행사를 추가하시겠습니까?\n(" + startStr + " ~ " + endStr + ")";
+
+                // 확인을 누르면 백엔드로 파라미터와 함께 전송
+                if(confirm(msg)) {
+                    window.location.href = `/add_event?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`;
+                }
+
+                // 선택 영역 표시 해제
+                calendar.unselect();
+            },
+
+            // 이벤트 클릭 시 (싱글 클릭 / 더블 클릭 구분 로직)
+            eventClick: function(info) {
+                if (clickTimer === null) {
+                    clickTimer = setTimeout(function() {
+                        clickTimer = null;
+                        window.location.href = info.event.extendedProps.detailUrl;
+                    }, 250);
+                } else {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    window.location.href = info.event.extendedProps.memberUrl;
+                }
+            }
+        });
+
+        // 토글 스위치 및 세션 스토리지 기반 뷰 전환 로직
+        var savedView = sessionStorage.getItem('eventViewMode');
+        var viewToggle = document.getElementById('viewToggle');
+
+        if (savedView === 'calendar') {
+            viewToggle.checked = true;
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('calendarView').style.display = 'block';
+            calendar.render();
+        }
+
+        viewToggle.addEventListener('change', function () {
+            if (this.checked) {
+                document.getElementById('listView').style.display = 'none';
+                document.getElementById('calendarView').style.display = 'block';
+                calendar.render();
+                sessionStorage.setItem('eventViewMode', 'calendar');
+            } else {
+                document.getElementById('listView').style.display = 'block';
+                document.getElementById('calendarView').style.display = 'none';
+                sessionStorage.setItem('eventViewMode', 'list');
+            }
+        });
+    });
+</script>
+
 
 </body>
 
