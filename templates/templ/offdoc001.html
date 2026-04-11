@@ -5,11 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>충효예 대학 산악회 참석의 건</title>
 <style>
-    /* A4 용지 설정 */
-    @page {
-        size: A4;
-        margin: 0;
+    /* 🖨️ 상단 출력 버튼 영역 */
+    .print-btn-container {
+        width: 100%;
+        background-color: #333;
+        padding: 15px 0;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
+    .print-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        font-size: 16pt;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .print-btn:hover {
+        background-color: #0056b3;
+    }
+
+    /* 기본 설정 (화면용) */
     body {
         margin: 0;
         padding: 0;
@@ -20,64 +42,69 @@
         font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
         color: #000;
     }
+
+    /* A4 페이지 기본 스타일 */
     .a4-page {
         width: 210mm;
-        min-height: 297mm;
-        /* 상하 여백을 25mm -> 15mm로 줄임 */
-        padding: 15mm 20mm;
+        height: 297mm;
+        padding: 12mm 18mm;
         background-color: white;
         box-sizing: border-box;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
         position: relative;
-        /* 줄 간격을 1.6 -> 1.45로 줄임 */
-        line-height: 1.45;
+        line-height: 1.4;
+        margin-top: 20px;
         margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     /* 헤더 영역 */
-    .doc-num { font-size: 11pt; margin-bottom: 10px; }
+    .doc-num { font-size: 11pt; margin-bottom: 5px; }
     .main-title {
         text-align: center; font-size: 24pt; font-weight: bold;
-        letter-spacing: 2px; margin-bottom: 20px; font-family: 'Batang', '바탕', serif;
+        letter-spacing: 2px; margin-bottom: 10px; font-family: 'Batang', '바탕', serif;
     }
-    .info-row { font-size: 13pt; font-weight: bold; margin-bottom: 3px; }
-    .divider { border-top: 1px solid #000; margin: 10px 0; }
+    .info-row { font-size: 13pt; font-weight: bold; margin-bottom: 2px; }
+    .divider { border-top: 1px solid #000; margin: 8px 0; }
 
     /* 본문 영역 */
-    .content-text { font-size: 12pt; text-align: justify; word-break: keep-all; margin-bottom: 15px; }
-    .content-text p { margin: 5px 0; text-indent: 15px; }
+    .content-text { font-size: 12pt; text-align: justify; word-break: keep-all; margin-bottom: 10px; }
+    .content-text p { margin: 4px 0; text-indent: 15px; }
     .bold-text { font-weight: bold; }
 
     /* 행사 개요 영역 */
-    .event-overview-title { text-align: center; color: red; font-weight: bold; font-size: 13pt; margin-bottom: 8px; }
+    .event-overview-title { text-align: center; color: red; font-weight: bold; font-size: 13pt; margin-bottom: 5px; }
+
+    /* 리스트 스타일 수정 */
     .event-list { list-style: none; padding-left: 40px; margin: 0; font-size: 12pt; }
-    .event-list li { position: relative; margin-bottom: 2px; }
-    .event-list li::before { content: "■"; position: absolute; left: -15px; }
+    .event-list > li { position: relative; margin-bottom: 2px; }
+    .event-list > li::before { content: "■"; position: absolute; left: -15px; }
+
     .blue-text { color: #0000FF; }
     .magenta-text { color: #FF00FF; }
-    .sub-list { list-style: none; padding-left: 25px; margin: 0; }
-    .sub-list li::before { content: "->"; position: absolute; left: 5px; }
-    .notice-text { color: #0000FF; padding-left: 20px; font-size: 11pt; margin-top: 3px; }
+
+    /* 서브 리스트 */
+    .sub-list { list-style: none; padding-left: 15px; margin: 0; }
+    .sub-list li { position: relative; margin-bottom: 2px; }
+    .sub-list li::before { content: none; }
+
+    .notice-text { color: #0000FF; padding-left: 20px; font-size: 11pt; margin-top: 2px; }
     .underline-bold { font-weight: bold; text-decoration: underline; }
 
     /* 테이블 영역 */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; text-align: center; font-size: 11pt; }
-    /* 테이블 셀 내부 여백 축소 */
-    th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 10px; text-align: center; font-size: 11pt; }
+    th, td { border: 1px solid #000; padding: 5px 3px; vertical-align: middle; }
     th { background-color: #c2dfa5; font-weight: bold; }
     .red-small { color: red; font-weight: bold; font-size: 10pt; }
 
     /* 하단 영역 */
-    .footer-notice { text-align: center; color: #0000FF; font-weight: bold; text-decoration: underline; font-size: 14pt; margin-bottom: 20px; }
-    .date { text-align: center; font-size: 13pt; margin-bottom: 20px; position: relative; }
-    .stamp-bg {
-        position: absolute; width: 60px; height: 60px; border: 2px solid red; border-radius: 5px;
-        color: red; display: flex; align-items: center; justify-content: center; font-size: 12px;
-        opacity: 0.5; top: -20px; left: 65%; transform: rotate(-10deg);
-    }
+    .footer-notice { text-align: center; color: #0000FF; font-weight: bold; text-decoration: underline; font-size: 14pt; margin-bottom: 10px; }
+    .date { text-align: center; font-size: 13pt; margin-bottom: 10px; position: relative; }
 
     /* 서명 영역 */
-    .signature-area { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .signature-area { display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
     .sig-left { display: flex; align-items: center; margin-right: 30px; }
     .sig-left-small { font-size: 12pt; font-family: 'Batang', serif; margin-right: 10px;}
     .sig-left-large { font-size: 22pt; font-weight: bold; letter-spacing: 2px; }
@@ -91,22 +118,40 @@
     }
 
     /* 푸터 연락처 영역 */
-    .footer-contact { border-top: 2px solid #000; padding-top: 8px; font-size: 10.5pt; }
+    .footer-contact { margin-top: auto; border-top: 2px solid #000; padding-top: 6px; font-size: 10.5pt; }
     .contact-row { display: flex; margin-bottom: 2px; }
     .contact-label { width: 70px; font-weight: bold; }
     .contact-value { flex: 1; }
 
-    /* 인쇄 시 설정 */
+    /* 🖨️ 실제 인쇄 시 적용되는 설정 (다중 페이지 오류 완벽 수정) */
     @media print {
-        body { background-color: white; }
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        html, body {
+            /* body의 높이를 고정하지 않고 자동으로 늘어나게 변경 (핵심) */
+            width: 100%;
+            height: auto;
+            background-color: white;
+            margin: 0;
+            padding: 0;
+            display: block; /* 다중 페이지 인쇄 시 flex 버그 방지 */
+        }
+        .print-btn-container { display: none !important; }
+
         .a4-page {
             box-shadow: none;
             margin: 0;
-            /* 인쇄 시에도 상하 여백을 15mm로 유지 */
-            padding: 15mm 20mm;
-            page-break-after: always;
+            padding: 12mm 18mm;
+            width: 210mm;
+            height: 297mm; /* 개별 페이지는 A4 사이즈 유지 */
+            box-sizing: border-box;
+            page-break-after: always; /* 페이지 넘김 강제 */
+            page-break-inside: avoid; /* 내용 중간에 잘림 방지 */
         }
-        .a4-page:last-child {
+
+        .a4-page:last-of-type {
             page-break-after: auto;
         }
     }
@@ -114,20 +159,23 @@
 </head>
 <body>
 
+<!-- 상단 출력 버튼 -->
+<div class="print-btn-container">
+    <button class="print-btn" onclick="window.print()">🖨️ 인쇄하기</button>
+</div>
+
 {% for member in members %}
 <div class="a4-page">
     <div class="doc-num">&lt;문서번호 26-03&gt;</div>
 
     <div class="main-title">社團法人 忠 · 孝 · 禮 大學</div>
 
-    <!-- 수신인 동적 데이터 바인딩 (memberMemo가 없으면 rankTitlekor 출력) -->
     <div class="info-row">수 신 : {{ member.memberName }} {{ member.memberMemo or member.rankTitlekor }}</div>
     <div class="info-row">제 목 : 충효예 대학 산악회 참석의 건</div>
 
     <div class="divider"></div>
 
     <div class="content-text">
-        <!-- 본문 동적 데이터 바인딩 (memberMemo가 없으면 rankTitlekor 출력) -->
         <p>1. <span class="bold-text">{{ member.memberName }} {{ member.memberMemo or member.rankTitlekor }}님</span>의 건승과 무궁한 발전을 기원합니다.</p>
         <p>2. 세계 최초로 설립된 사단법인 충효예 대학에서는 푸른 신록이 짙어지고 꽃향기가 가득한 5월, 금정산 산행을 통하여 <span class="bold-text">영원불멸한 충효예 정신으로 총동문회 발전과 건강 증진을 도모</span>하고자 <span class="bold-text">자연과 함께하는 충효예 대학 산악회</span>를 아래와 같이 개최합니다.</p>
     </div>
@@ -141,8 +189,8 @@
         <li><span class="bold-text">시 상 : </span><span class="bold-text">A·B·C코스-금상·은상·동상 메달 수여(총10명)</span></li>
         <li><span class="bold-text">참가비 : </span><span class="magenta-text bold-text">각기수당 참가분담금 30만원(참석원우 참가비 없음)</span>
             <ul class="sub-list">
-                <li> 참석자 전원에게 기념품 및 식사제공</li>
-                <li><span class="bold-text"> 각기수당 10명이상 참석요망(4/30까지 참석자명단 접수)</span></li>
+                <li>참석자 전원에게 기념품 및 식사제공</li>
+                <li><span class="bold-text">각기수당 10명이상 참석요망(4/30까지 참석자명단 접수)</span></li>
             </ul>
         </li>
         <li><span class="bold-text">식사장소 : </span><span class="bold-text">다금 (17:00)</span> (초읍시립도서관 부근)<br>
@@ -221,7 +269,6 @@
     </div>
 </div>
 {% endfor %}
-<!-- Jinja2 반복문 종료 -->
 
 </body>
 </html>
