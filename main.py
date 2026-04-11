@@ -534,9 +534,14 @@ async def classmembers(request: Request,eventno:int ,db: AsyncSession = Depends(
 async def membertoevent(request: Request, eventno: int, memberno: int, db: AsyncSession = Depends(get_db)):
     query = text(f"select * from chyEventmember where eventNo = :eventno and memberNo = :memberno")
     result = await db.execute(query, {"eventno": eventno, "memberno": memberno})
+    query2 = text(f"select classRank from chyClassmember where memberNo = :memberno")
+    result2 = await db.execute(query2, {"memberno": memberno})
+    rank = result2.fetchone()
+    if rank is None:
+        rank = 5
     if result.rowcount == 0:
-        query = text(f"INSERT into chyEventmember (eventNo, memberNo) values (:eventno, :memberno)")
-        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        query = text(f"INSERT into chyEventmember (eventNo, memberNo, classRank) values (:eventno, :memberno, :rank)")
+        await db.execute(query, {"eventno": eventno, "memberno": memberno, "rank": rank[0]})
         await db.commit()
         return JSONResponse({"result": "ok"})
     else:
