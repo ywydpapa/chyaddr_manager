@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>충효예 대학 산악회 참석의 건</title>
+<style>
+    /* A4 용지 설정 */
+    @page {
+        size: A4;
+        margin: 0;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
+        color: #000;
+    }
+    .a4-page {
+        width: 210mm;
+        min-height: 297mm;
+        /* 상하 여백을 25mm -> 15mm로 줄임 */
+        padding: 15mm 20mm;
+        background-color: white;
+        box-sizing: border-box;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        position: relative;
+        /* 줄 간격을 1.6 -> 1.45로 줄임 */
+        line-height: 1.45;
+        margin-bottom: 20px;
+    }
+
+    /* 헤더 영역 */
+    .doc-num { font-size: 11pt; margin-bottom: 10px; }
+    .main-title {
+        text-align: center; font-size: 24pt; font-weight: bold;
+        letter-spacing: 2px; margin-bottom: 20px; font-family: 'Batang', '바탕', serif;
+    }
+    .info-row { font-size: 13pt; font-weight: bold; margin-bottom: 3px; }
+    .divider { border-top: 1px solid #000; margin: 10px 0; }
+
+    /* 본문 영역 */
+    .content-text { font-size: 12pt; text-align: justify; word-break: keep-all; margin-bottom: 15px; }
+    .content-text p { margin: 5px 0; text-indent: 15px; }
+    .bold-text { font-weight: bold; }
+
+    /* 행사 개요 영역 */
+    .event-overview-title { text-align: center; color: red; font-weight: bold; font-size: 13pt; margin-bottom: 8px; }
+    .event-list { list-style: none; padding-left: 40px; margin: 0; font-size: 12pt; }
+    .event-list li { position: relative; margin-bottom: 2px; }
+    .event-list li::before { content: "■"; position: absolute; left: -15px; }
+    .blue-text { color: #0000FF; }
+    .magenta-text { color: #FF00FF; }
+    .sub-list { list-style: none; padding-left: 25px; margin: 0; }
+    .sub-list li::before { content: "->"; position: absolute; left: 5px; }
+    .notice-text { color: #0000FF; padding-left: 20px; font-size: 11pt; margin-top: 3px; }
+    .underline-bold { font-weight: bold; text-decoration: underline; }
+
+    /* 테이블 영역 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; text-align: center; font-size: 11pt; }
+    /* 테이블 셀 내부 여백 축소 */
+    th, td { border: 1px solid #000; padding: 6px 4px; vertical-align: middle; }
+    th { background-color: #c2dfa5; font-weight: bold; }
+    .red-small { color: red; font-weight: bold; font-size: 10pt; }
+
+    /* 하단 영역 */
+    .footer-notice { text-align: center; color: #0000FF; font-weight: bold; text-decoration: underline; font-size: 14pt; margin-bottom: 20px; }
+    .date { text-align: center; font-size: 13pt; margin-bottom: 20px; position: relative; }
+    .stamp-bg {
+        position: absolute; width: 60px; height: 60px; border: 2px solid red; border-radius: 5px;
+        color: red; display: flex; align-items: center; justify-content: center; font-size: 12px;
+        opacity: 0.5; top: -20px; left: 65%; transform: rotate(-10deg);
+    }
+
+    /* 서명 영역 */
+    .signature-area { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .sig-left { display: flex; align-items: center; margin-right: 30px; }
+    .sig-left-small { font-size: 12pt; font-family: 'Batang', serif; margin-right: 10px;}
+    .sig-left-large { font-size: 22pt; font-weight: bold; letter-spacing: 2px; }
+    .sig-right { display: flex; flex-direction: column; position: relative; }
+    .sig-row { display: flex; align-items: center; margin-bottom: 5px; }
+    .sig-title { width: 60px; font-size: 12pt; font-family: 'Batang', serif; line-height: 1.2; }
+    .sig-name { font-size: 20pt; font-weight: bold; font-family: 'Batang', serif; margin-left: 10px; margin-right: 20px; }
+    .main-stamp-img {
+        position: absolute; right: -25px; top: 50%; transform: translateY(-50%);
+        width: 75px; height: 75px; mix-blend-mode: multiply; pointer-events: none;
+    }
+
+    /* 푸터 연락처 영역 */
+    .footer-contact { border-top: 2px solid #000; padding-top: 8px; font-size: 10.5pt; }
+    .contact-row { display: flex; margin-bottom: 2px; }
+    .contact-label { width: 70px; font-weight: bold; }
+    .contact-value { flex: 1; }
+
+    /* 인쇄 시 설정 */
+    @media print {
+        body { background-color: white; }
+        .a4-page {
+            box-shadow: none;
+            margin: 0;
+            /* 인쇄 시에도 상하 여백을 15mm로 유지 */
+            padding: 15mm 20mm;
+            page-break-after: always;
+        }
+        .a4-page:last-child {
+            page-break-after: auto;
+        }
+    }
+</style>
+</head>
+<body>
+
+<!-- Jinja2 반복문 시작 -->
+{% for member in members %}
+<div class="a4-page">
+    <div class="doc-num">&lt;문서번호 26-03&gt;</div>
+
+    <div class="main-title">社團法人 忠 · 孝 · 禮 大學</div>
+
+    <!-- 수신인 동적 데이터 바인딩 -->
+    <div class="info-row">수 신 : {{ member.classNo }}기 {{ member.memberName }} {{ member.rankTitlekor }}</div>
+    <div class="info-row">제 목 : 충효예 대학 산악회 참석의 건</div>
+
+    <div class="divider"></div>
+
+    <div class="content-text">
+        <p>1. <span class="bold-text">{{ member.memberName }} {{ member.rankTitlekor }}님</span>의 건승과 무궁한 발전을 기원합니다.</p>
+        <p>2. 세계 최초로 설립된 사단법인 충효예 대학에서는 푸른 신록이 짙어지고 꽃향기가 가득한 5월, 금정산 산행을 통하여 <span class="bold-text">영원불멸한 충효예 정신으로 총동문회 발전과 건강 증진을 도모</span>하고자 <span class="bold-text">자연과 함께하는 충효예 대학 산악회</span>를 아래와 같이 개최합니다.</p>
+    </div>
+
+    <div class="event-overview-title">&lt;행사개요&gt;</div>
+
+    <ul class="event-list">
+        <li><span class="bold-text">행사명 : 충효예 대학 총동문회 산악회</span></li>
+        <li><span class="bold-text">일 시 : </span><span class="blue-text bold-text" style="font-size: 13pt;">2026.05.16.(토) 14:00</span></li>
+        <li><span class="bold-text">장 소 : </span><span class="blue-text bold-text">어린이대공원 정문 집결</span></li>
+        <li><span class="bold-text">시 상 : </span><span class="bold-text">A·B·C코스-금상·은상·동상 메달 수여(총10명)</span></li>
+        <li><span class="bold-text">참가비 : </span><span class="magenta-text bold-text">각기수당 참가분담금 30만원(참석원우 참가비 없음)</span>
+            <ul class="sub-list">
+                <li> 참석자 전원에게 기념품 및 식사제공</li>
+                <li><span class="bold-text"> 각기수당 10명이상 참석요망(4/30까지 참석자명단 접수)</span></li>
+            </ul>
+        </li>
+        <li><span class="bold-text">식사장소 : </span><span class="bold-text">다금 (17:00)</span> (초읍시립도서관 부근)<br>
+            <span style="padding-left: 75px;">(부산진구 월드컵대로474번길 4 ☎051)808-3455)</span>
+        </li>
+        <div class="notice-text">※시간 관계상 등반이 어려우신 분께서는 식사 장소로 바로 오셔도 됩니다.</div>
+        <li style="margin-top: 5px;"><span class="underline-bold">기 안 : 충효예 대학 산악회 회장 <span style="font-size: 16pt;">설종섭</span></span></li>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">출발지(집결)</th>
+                <th style="width: 15%;">구분</th>
+                <th style="width: 40%;">산행코스</th>
+                <th style="width: 30%;">인솔책임자</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="3" style="font-weight: bold;">어린이대공원<br>정문<br>(14:00)</td>
+                <td><span class="bold-text">A코스</span><br><span class="red-small">&lt;3시간소요&gt;</span></td>
+                <td>어린이대공원 정문-&gt;금정산남문</td>
+                <td>설종섭(산악회 회장)<br>이상곤(산악회 사무총장)</td>
+            </tr>
+            <tr>
+                <td><span class="bold-text">B코스</span><br><span class="red-small">&lt;2시간소요&gt;</span></td>
+                <td>어린이대공원 정문-&gt;<br>금정산남문코스방향갈림길</td>
+                <td>김용우(부총재)<br>조성직(부총재)</td>
+            </tr>
+            <tr>
+                <td><span class="bold-text">C코스</span><br><span class="red-small">&lt;1시간소요&gt;</span></td>
+                <td>어린이대공원 정문-&gt;전망쉼터</td>
+                <td>오준영(사무총장)<br>정익수(6기원우회회장)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-notice">※B·C코스는 본인의 체력 및 컨디션을 고려하여 선택하시기 바랍니다.</div>
+
+    <div class="date">
+        2026. 4. 9(목)
+    </div>
+
+    <div class="signature-area">
+        <div class="sig-left">
+            <span class="sig-left-small">社團法人</span>
+            <span class="sig-left-large">忠·孝·禮 大學</span>
+        </div>
+        <div class="sig-right">
+            <div class="sig-row">
+                <span class="sig-title">理事長<br>總 裁</span>
+                <span class="sig-name">柳 震 壽</span>
+            </div>
+            <div class="sig-row">
+                <span class="sig-title">總 長</span>
+                <span class="sig-name">金 明 洙</span>
+            </div>
+            <img src="/static/img/stamp/mainstamp.png" alt="직인" class="main-stamp-img">
+        </div>
+    </div>
+
+    <div class="footer-contact">
+        <div class="contact-row">
+            <div class="contact-label">주 소 :</div>
+            <div class="contact-value">(우 48741) 부산광역시 동구 조방로 14, 713호(범일동,동일타워)</div>
+        </div>
+        <div class="contact-row">
+            <div class="contact-label">전 화 :</div>
+            <div style="width: 180px;">051)638-9911,9912</div>
+            <div class="contact-label" style="width: 50px;">팩 스 :</div>
+            <div style="width: 130px;">051)638-9915</div>
+            <div class="contact-label" style="width: 60px;">E-mail :</div>
+            <div>mdsjsm@naver.com</div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+<!-- Jinja2 반복문 종료 -->
+
+</body>
+</html>

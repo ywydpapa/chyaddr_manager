@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>충효예대학 원우관리 - 행사 관리</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <!-- FullCalendar CDN 추가 -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <style>
+        /* 달력 이벤트(일정) 텍스트 색상 및 커서 설정 */
+        .fc-event { cursor: pointer; }
+        .fc-event-title { font-weight: bold; }
+        /* 커스텀 버튼 색상 변경 */
+        .fc-addEventButton-button {
+            background-color: #4e73df !important;
+            border-color: #4e73df !important;
+            font-weight: bold !important;
+        }
+        .fc-addEventButton-button:hover {
+            background-color: #2e59d9 !important;
+            border-color: #264bce !important;
+        }
+    </style>
+
+</head>
+
+<body id="page-top">
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+
+    {% include 'common/sidebar.html' %}
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+        <!-- Main Content -->
+        <div id="content">
+
+            {% include 'common/topbar.html' %}
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid">
+
+                <!-- Page Heading -->
+                <div style="display: flex; align-items: center; justify-content: space-between;" class="mb-4">
+                    <h4 class="h3 mb-0 text-gray-800">행사 관련문서 출력</h4>
+
+                    <!-- 멤버 선택 드롭다운 및 출력 버튼 -->
+                    <div class="form-inline">
+                        <select id="memberSelect" class="form-control mr-2">
+                            <!-- 전체 출력일 때는 직책 데이터를 비워둡니다 -->
+                            <option value="all" data-ranktitle="">전체 출력</option>
+                            <!-- 백엔드에서 넘어온 members를 반복하여 옵션 생성 (data-ranktitle 추가) -->
+                            {% for member in members %}
+                            <option value="{{ member.memberNo }}" data-ranktitle="{{ member.rankTitlekor }}">
+                                {{ member.memberName }} ({{ member.classNo }}기)
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        <!-- 직책을 표시하고 수정할 수 있는 텍스트 박스 -->
+                        <input type="text" id="titlekor" value="" class="form-control mr-2" placeholder="직책" disabled>
+
+                        <button id="printDocBtn" class="btn btn-primary">
+                            <i class="fas fa-print fa-sm text-white-50"></i> 문서 출력
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 캘린더 및 리스트 뷰 영역 (기존 코드 유지) -->
+                <!-- ... (생략) ... -->
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- End of Main Content -->
+
+        {% include 'common/footer.html' %}
+
+    </div>
+    <!-- End of Content Wrapper -->
+
+</div>
+<!-- End of Page Wrapper -->
+
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Logout Modal 및 Event Edit Modal (기존 코드 유지) -->
+<!-- ... (생략) ... -->
+
+<!-- Bootstrap core JavaScript-->
+{% include 'common/adscript.html' %}
+
+<script>
+    // 1. 드롭다운 선택 변경 시 이벤트
+    document.getElementById('memberSelect').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var rankTitle = selectedOption.getAttribute('data-ranktitle') || '';
+        var titlekorInput = document.getElementById('titlekor');
+
+        if (this.value === 'all') {
+            // 전체 출력 선택 시 텍스트 박스 비우고 비활성화
+            titlekorInput.value = '';
+            titlekorInput.disabled = true;
+        } else {
+            // 특정 회원 선택 시 해당 회원의 직책을 텍스트 박스에 넣고 활성화
+            titlekorInput.value = rankTitle;
+            titlekorInput.disabled = false;
+        }
+    });
+
+    // 2. 문서 출력 버튼 클릭 이벤트
+    document.getElementById('printDocBtn').addEventListener('click', function() {
+        var selectedMember = document.getElementById('memberSelect').value;
+        var eventNo = {{eventno}};
+        var customTitle = document.getElementById('titlekor').value;
+
+        // 기본 URL 구성
+        var printUrl = `/print_document/${eventNo}?memberNo=${selectedMember}`;
+
+        // 특정 회원을 선택했고, 텍스트 박스에 값이 있다면 파라미터로 추가
+        if (selectedMember !== 'all' && customTitle.trim() !== '') {
+            // encodeURIComponent를 사용하여 한글 깨짐 방지
+            printUrl += `&customTitle=${encodeURIComponent(customTitle)}`;
+        }
+
+        window.open(printUrl, '_blank');
+    });
+</script>
+</body>
+</html>

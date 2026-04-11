@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -95,7 +93,7 @@
                                         <tr style="text-align: center">
                                             <td><a href="/event_Detail/{{item[0]}}" class="font-weight-bold">{{ item[1] }} ( {{ item["memberCount"] }} 명)</a></td>
                                             <td><a href="/event_members/{{item[0]}}" class="btn btn-sm btn-info">회원관리</a></td>
-                                            <td><a href="#/event_notice/{{item[0]}}" class="btn btn-sm btn-secondary">행사지원관리</a></td>
+                                            <td><a href="/event_notice/{{item[0]}}" class="btn btn-sm btn-secondary">행사지원관리</a></td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -148,14 +146,58 @@
     </div>
 </div>
 
+<!-- 행사 수정 모달 (Event Edit Modal) -->
+<div class="modal fade" id="eventEditModal" tabindex="-1" role="dialog" aria-labelledby="eventEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <!-- action은 JS에서 동적으로 할당됩니다 -->
+            <form id="eventEditForm" method="POST" action="">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventEditModalLabel">행사 수정</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editEventTitle">행사 명칭</label>
+                        <!-- name="eventtitle" 로 매핑 -->
+                        <input type="text" class="form-control" id="editEventTitle" name="eventtitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEventPlace">행사 장소</label>
+                        <!-- name="eventplace" 로 매핑 -->
+                        <input type="text" class="form-control" id="editEventPlace" name="eventplace">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEventStart">시작 일시</label>
+                        <!-- name="eventfr" 로 매핑 -->
+                        <input type="datetime-local" class="form-control" id="editEventStart" name="eventfr" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEventEnd">종료 일시</label>
+                        <!-- name="eventto" 로 매핑 -->
+                        <input type="datetime-local" class="form-control" id="editEventEnd" name="eventto" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary">수정 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <!-- Bootstrap core JavaScript-->
 {% include 'common/adscript.html' %}
 
 <script>
     var calendar;
-    var clickTimer = null; // 더블클릭 판별을 위한 타이머 변수
+    var clickTimer = null;
 
-    // 날짜 포맷팅 함수 (YYYY-MM-DD HH:mm:ss)
+    // YYYY-MM-DD HH:mm:ss 포맷 (백엔드 전송용)
     function formatDateTime(date) {
         var y = date.getFullYear();
         var m = String(date.getMonth() + 1).padStart(2, '0');
@@ -166,17 +208,28 @@
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
     }
 
-    // Jinja2 데이터를 FullCalendar 이벤트 배열로 변환
+    // YYYY-MM-DDTHH:mm 포맷 (datetime-local input 용)
+    function formatForDateTimeLocal(date) {
+        if (!date) return "";
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        var h = String(date.getHours()).padStart(2, '0');
+        var min = String(date.getMinutes()).padStart(2, '0');
+        return `${y}-${m}-${d}T${h}:${min}`;
+    }
+
     var allEvents = [
         {% for item in event_list %}
         {
             id: '{{ item[0] }}',
             title: '{{ item[1] }}',
+            // ★ DB에서 날짜와 장소 데이터를 가져와 매핑해주세요.
             start: '{{ item.eventFrom }}',
             end: '{{ item.eventTo }}',
             extendedProps: {
-                detailUrl: '/event_Detail/{{ item[0] }}',
-                memberUrl: '/event_members/{{ item[0] }}'
+                memberUrl: '/event_members/{{ item[0] }}',
+                place: '{{ item.eventPlace }}' // 장소 데이터가 있다면 추가
             },
             backgroundColor: '#1cc88a',
             borderColor: '#1cc88a',
@@ -204,58 +257,76 @@
                 right: 'addEventButton dayGridMonth,dayGridWeek'
             },
             events: allEvents,
-
-            // ★ 추가된 부분: 달력에서 날짜를 드래그하거나 클릭할 수 있도록 활성화
             selectable: true,
 
-            // ★ 변경된 부분: 드래그(또는 클릭) 완료 시 발생하는 이벤트
+            // 드래그로 행사 추가
             select: function(info) {
                 var startDate = new Date(info.start);
                 var endDate = new Date(info.end);
-
-                // FullCalendar의 select 이벤트에서 end 날짜는 선택한 마지막 날의 '다음날 00:00'을 가리킵니다.
-                // 따라서 실제 사용자가 드래그한 마지막 날짜를 구하기 위해 하루를 빼줍니다.
                 endDate.setDate(endDate.getDate() - 1);
 
                 var now = new Date();
                 var startHour = now.getHours() + 1;
 
-                // 시작일의 시간 설정 (현재 시간 기준 1시간 뒤 정각)
                 startDate.setHours(startHour, 0, 0, 0);
-
-                // 종료일의 시간 설정 (시작 시간 + 3시간 뒤 정각)
                 endDate.setHours(startHour + 3, 0, 0, 0);
 
                 var startStr = formatDateTime(startDate);
                 var endStr = formatDateTime(endDate);
 
                 var msg = "선택한 기간으로 새 행사를 추가하시겠습니까?\n(" + startStr + " ~ " + endStr + ")";
-
-                // 확인을 누르면 백엔드로 파라미터와 함께 전송
                 if(confirm(msg)) {
                     window.location.href = `/add_event?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`;
                 }
-
-                // 선택 영역 표시 해제
                 calendar.unselect();
             },
 
-            // 이벤트 클릭 시 (싱글 클릭 / 더블 클릭 구분 로직)
+                        // ★ 변경된 부분: 이벤트 클릭 시 팝업 띄우기 (싱글 클릭) / 회원관리 이동 (더블 클릭)
             eventClick: function(info) {
                 if (clickTimer === null) {
                     clickTimer = setTimeout(function() {
                         clickTimer = null;
-                        window.location.href = info.event.extendedProps.detailUrl;
+
+                        // 1. 싱글 클릭 시: 모달에 데이터 채우고 띄우기
+                        var eventNo = info.event.id;
+
+                        // 폼의 action URL을 기존 백엔드 라우터에 맞게 동적 설정
+                        document.getElementById('eventEditForm').action = "/update_event/" + eventNo;
+
+                        // 모달 입력창에 기존 데이터 채우기
+                        document.getElementById('editEventTitle').value = info.event.title;
+
+                        if (info.event.start) {
+                            document.getElementById('editEventStart').value = formatForDateTimeLocal(info.event.start);
+                        }
+                        if (info.event.end) {
+                            document.getElementById('editEventEnd').value = formatForDateTimeLocal(info.event.end);
+                        } else if (info.event.start) {
+                            // 종료일이 없으면 시작일과 동일하게 세팅
+                            document.getElementById('editEventEnd').value = formatForDateTimeLocal(info.event.start);
+                        }
+
+                        // 장소 데이터가 extendedProps에 있다면 채우기
+                        if (info.event.extendedProps.place) {
+                            document.getElementById('editEventPlace').value = info.event.extendedProps.place;
+                        } else {
+                            document.getElementById('editEventPlace').value = "";
+                        }
+
+                        // Bootstrap 모달 띄우기
+                        $('#eventEditModal').modal('show');
+
                     }, 250);
                 } else {
                     clearTimeout(clickTimer);
                     clickTimer = null;
+                    // 2. 더블 클릭 시: 회원 관리 페이지로 이동
                     window.location.href = info.event.extendedProps.memberUrl;
                 }
             }
         });
 
-        // 토글 스위치 및 세션 스토리지 기반 뷰 전환 로직
+        // 토글 스위치 뷰 전환 로직 (생략 - 기존과 동일)
         var savedView = sessionStorage.getItem('eventViewMode');
         var viewToggle = document.getElementById('viewToggle');
 
@@ -280,8 +351,5 @@
         });
     });
 </script>
-
-
 </body>
-
 </html>

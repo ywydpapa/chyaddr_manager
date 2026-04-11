@@ -483,8 +483,9 @@ async def eventlists(request: Request, db: AsyncSession = Depends(get_db)):
 async def classmembers(request: Request,classno:int ,db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
     cmember_list = await funchub.get_classmemberlist(db, classno)
+    ranks = await funchub.get_ranklist(db)
     return templates.TemplateResponse(request=request, name="class/class_members.html", context={
-        "request": request, "member_list": member_list, "classno": classno, "cmember_list": cmember_list})
+        "request": request, "member_list": member_list, "classno": classno, "cmember_list": cmember_list, "ranks": ranks})
 
 
 @app.post("/membertoclass/{classno}/{memberno}")
@@ -524,8 +525,9 @@ async def getclassmembers(request: Request, classno: int, db: AsyncSession = Dep
 async def classmembers(request: Request,eventno:int ,db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
     cmember_list = await funchub.get_eventmemberlist(db, eventno)
+    ranks = await funchub.get_ranklist(db)
     return templates.TemplateResponse(request=request, name="class/event_members.html", context={
-        "request": request, "member_list": member_list, "classno": eventno, "cmember_list": cmember_list, "eventno": eventno})
+        "request": request, "member_list": member_list, "classno": eventno, "cmember_list": cmember_list, "eventno": eventno, "ranks": ranks})
 
 
 @app.post("/membertoevent/{eventno}/{memberno}")
@@ -559,6 +561,13 @@ async def geteventmembers(request: Request, eventno: int, db: AsyncSession = Dep
     rows = await funchub.get_eventmemberlist(db, eventno)
     members = [funchub.row_to_dict(row) for row in rows]
     return JSONResponse({"members": members})
+
+
+@app.get("/event_notice/{eventno}", response_class=JSONResponse)
+async def eventnotice(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
+    rows = await funchub.get_eventmemberlist(db, eventno)
+    return templates.TemplateResponse(request=request, name="class/event_offcialdoc.html", context={"request": request, "eventno": eventno, "members": rows})
+
 
 
 @app.get("/api/member/{memberno}/prize")
@@ -727,3 +736,87 @@ async def get_event(db: AsyncSession = Depends(get_db)):
         result = []
     return {"events": result}
 
+
+@app.post("/update_classmember_info")
+async def update_classmember_info(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        form_data = await request.form()
+        classno = form_data.get("classNo")
+        memberno = form_data.get("memberNo")
+        data = {
+            "classRank": form_data.get("classRank"),
+            "memberMemo": form_data.get("memberMemo", '')
+        }
+        update_fields = {k: v for k, v in data.items() if v is not None}
+
+        if update_fields and classno and memberno:
+            params = dict(update_fields)
+            params["memberNo"] = memberno
+            params["classNo"] = classno
+            set_clause = ', '.join([f'{k} = :{k}' for k in update_fields.keys()])
+            query = f"UPDATE chyClassmember SET {set_clause} WHERE memberNo = :memberNo AND classNo = :classNo"
+            await db.execute(text(query), params)
+            await db.commit()
+        return {"result": "ok"}
+    except Exception as e:
+        print(f"Update Error: {e}")
+        await db.rollback()
+        return {"result": "error"}
+
+
+@app.get("/print_document/{eventno}")
+async def print_documents(
+        request: Request,
+        eventno: int,
+        memberNo: Optional[str] = "all",
+        customTitle: Optional[str] = None,
+        db: AsyncSession = Depends(get_db)
+):
+    # 1. DB에서 데이터 가져오기 (SQLAlchemy Row 객체 리스트)
+    raw_rows = await funchub.get_eventmemberlist(db, eventno)
+
+    # 2. Row 객체는 수정이 불가능하므로, 모두 딕셔너리(dict)로 변환합니다.
+    # (SQLAlchemy 1.4/2.0 방식: row._mapping 사용)
+    rows = [dict(row._mapping) for row in raw_rows]
+
+    if memberNo != "all":
+        # 3. 딕셔너리로 변환되었으므로 ["memberNo"]로 안전하게 접근 및 필터링 가능
+        filtered_rows = [row for row in rows if str(row["memberNo"]) == str(memberNo)]
+
+        # 4. 프런트엔드에서 수정한 직책(customTitle)이 넘어왔다면 덮어쓰기
+        if customTitle and filtered_rows:
+            filtered_rows[0]["rankTitlekor"] = customTitle
+
+        rows = filtered_rows
+
+    return templates.TemplateResponse(
+        name="templ/offdoc001.html",
+        context={"request": request, "eventno": eventno, "members": rows}
+    )
+
+
+@app.post("/update_eventmember_info")
+async def update_eventmember_info(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        form_data = await request.form()
+        eventno = form_data.get("eventNo")
+        memberno = form_data.get("memberNo")
+        data = {
+            "classRank": form_data.get("eventRank"),
+            "memberMemo": form_data.get("memberMemo", '')
+        }
+        update_fields = {k: v for k, v in data.items() if v is not None}
+
+        if update_fields and eventno and memberno:
+            params = dict(update_fields)
+            params["memberNo"] = memberno
+            params["eventNo"] = eventno
+            set_clause = ', '.join([f'{k} = :{k}' for k in update_fields.keys()])
+            query = f"UPDATE chyEventmember SET {set_clause} WHERE memberNo = :memberNo AND eventNo = :eventNo"
+            await db.execute(text(query), params)
+            await db.commit()
+        return {"result": "ok"}
+    except Exception as e:
+        print(f"Update Event Member Error: {e}")
+        await db.rollback()
+        return {"result": "error"}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 
 <head>
 
@@ -95,10 +95,18 @@
                                 <tbody>
                                 {% for member in cmember_list %}
                                 <tr style="text-align: center">
-                                    <td><a href="/editcirclemember/{{classno}}/{{ member.memberNo }}">{{
-                                        member.memberNo }}</a></td>
-                                    <td><a href="/editcirclemember/{{classno}}/{{ member.memberNo }}">{{
-                                        member.memberName }}</a></td>
+                                    <!-- 회원번호 클릭 시 기존 페이지 이동 유지 -->
+                                    <td><a href="/editclassmember/{{classno}}/{{ member.memberNo }}">{{ member.memberNo }}</a></td>
+                                    <!-- 회원성명 클릭 시 모달 팝업 호출 -->
+                                    <td>
+                                        <a href="javascript:void(0);" class="edit-member-btn"
+                                           data-memberno="{{ member.memberNo }}"
+                                           data-membername="{{ member.memberName }}"
+                                           data-classrank="{{ member.classRank }}"
+                                           data-membermemo="{{ member.memberMemo }}">
+                                            {{ member.memberName }}
+                                        </a>
+                                    </td>
                                     <td>{{ member.rankTitlekor }}</td>
                                     <td>
                                         <button class="btn-facebook minus-member-btn" data-classno="{{ classno }}"
@@ -127,6 +135,47 @@
     <a class="scroll-to-top rounded" href="#page-top">
         <i class="fas fa-angle-up"></i>
     </a>
+
+    <!-- 회원 정보 수정 모달 (직책, 메모) -->
+    <div class="modal fade" id="editMemberModal" tabindex="-1" role="dialog" aria-labelledby="editMemberModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editMemberModalLabel">회원 정보 수정</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editMemberForm">
+                        <input type="hidden" id="modalMemberNo">
+                        <div class="form-group">
+                            <label for="modalMemberName">회원성명</label>
+                            <input type="text" class="form-control" id="modalMemberName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalClassRank">직책</label>
+                            <select class="form-control" id="modalClassRank">
+                                <option value="">직책 선택</option>
+                                <!-- 백엔드에서 넘겨준 rank_list 반복 -->
+                                {% for rank in ranks %}
+                                <option value="{{ rank.rankNo }}">{{ rank.rankTitleKor }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalMemberMemo">메모</label>
+                            <textarea class="form-control" id="modalMemberMemo" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">취소</button>
+                    <button class="btn btn-primary" type="button" id="saveMemberBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Logout Modal-->
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
@@ -164,7 +213,7 @@
                 order: [[1, "asc"]]
             });
 
-            // 이벤트 위임 방식으로 변경!
+            // 전체 회원 리스트 -> 추가 버튼
             $('#allmemberlist').on('click', '.add-member-btn', function () {
                 let classno = $(this).data('classno');
                 let memberno = $(this).data('memberno');
@@ -190,6 +239,7 @@
                 });
             });
 
+            // 기수 회원 리스트 -> 제거 버튼
             $('#cmemberlist').on('click', '.minus-member-btn', function () {
                 let classno = $(this).data('classno');
                 let memberno = $(this).data('memberno');
@@ -213,8 +263,57 @@
                     }
                 });
             });
+
+            // [추가] 회원 이름 클릭 시 모달 열기
+            $('#cmemberlist').on('click', '.edit-member-btn', function (e) {
+                e.preventDefault();
+                let memberno = $(this).data('memberno');
+                let membername = $(this).data('membername');
+                let classrank = $(this).data('classrank');
+                let membermemo = $(this).data('membermemo');
+
+                $('#modalMemberNo').val(memberno);
+                $('#modalMemberName').val(membername);
+                $('#modalClassRank').val(classrank);
+                $('#modalMemberMemo').val(membermemo);
+
+                $('#editMemberModal').modal('show');
+            });
+
+            // [추가] 모달 저장 버튼 클릭 시 데이터 전송
+            $('#saveMemberBtn').click(function () {
+                let classno = '{{ classno }}';
+                let memberno = $('#modalMemberNo').val();
+                let classRank = $('#modalClassRank').val();
+                let memberMemo = $('#modalMemberMemo').val();
+
+                $.ajax({
+                    url: `/update_classmember_info`,
+                    type: 'POST',
+                    // contentType을 지정하지 않으면 기본값인 Form Data(x-www-form-urlencoded)로 전송됩니다.
+                    data: {
+                        classNo: classno,
+                        memberNo: memberno,
+                        classRank: classRank,
+                        memberMemo: memberMemo
+                    },
+                    success: function (data) {
+                        if (data.result === "ok") {
+                            alert('정보가 수정되었습니다.');
+                            $('#editMemberModal').modal('hide');
+                            refreshClassMemberList(classno);
+                        } else {
+                            alert('수정 중 오류가 발생했습니다.');
+                        }
+                    },
+                    error: function () {
+                        alert('서버와 통신 중 오류가 발생했습니다.');
+                    }
+                });
+            });
         });
 
+        // 테이블 리프레시 함수
         function refreshClassMemberList(classno) {
             $.get(`/getclassmembers/${classno}`, function (data) {
                 let table = $('#cmemberlist').DataTable();
@@ -223,7 +322,14 @@
                 data.members.forEach(function (member) {
                     let row = [
                         `<a href="/editclassmember/${classno}/${member.memberNo}">${member.memberNo}</a>`,
-                        `<a href="/editclassmember/${classno}/${member.memberNo}">${member.memberName}</a>`,
+                        // 변경된 이름 클릭 태그 (모달 호출용 데이터 포함)
+                        `<a href="javascript:void(0);" class="edit-member-btn"
+                            data-memberno="${member.memberNo}"
+                            data-membername="${member.memberName}"
+                            data-classrank="${member.classRank || ''}"
+                            data-membermemo="${member.memberMemo || ''}">
+                            ${member.memberName}
+                        </a>`,
                         member.rankTitlekor || '',
                         `<button class="btn-facebook minus-member-btn"
                  data-classno="${classno}"
@@ -241,5 +347,4 @@
 
     </script>
 </body>
-
 </html>
