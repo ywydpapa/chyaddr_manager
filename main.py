@@ -774,7 +774,7 @@ async def print_documents(
         request: Request,
         eventno: int,
         memberNo: Optional[str] = "all",
-        customTitle: Optional[str] = None,
+        customMemo: Optional[str] = None,
         db: AsyncSession = Depends(get_db)
 ):
     # 1. DB에서 데이터 가져오기 (SQLAlchemy Row 객체 리스트)
@@ -789,8 +789,8 @@ async def print_documents(
         filtered_rows = [row for row in rows if str(row["memberNo"]) == str(memberNo)]
 
         # 4. 프런트엔드에서 수정한 직책(customTitle)이 넘어왔다면 덮어쓰기
-        if customTitle and filtered_rows:
-            filtered_rows[0]["rankTitlekor"] = customTitle
+        if customMemo and filtered_rows:
+            filtered_rows[0]["memberMemo"] = customMemo
 
         rows = filtered_rows
 
