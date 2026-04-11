@@ -120,14 +120,15 @@
 
     <div class="main-title">社團法人 忠 · 孝 · 禮 大學</div>
 
-    <!-- 수신인 동적 데이터 바인딩 -->
-    <div class="info-row">수 신 : {{ member.classNo }}기 {{ member.memberName }} {{ member.rankTitlekor }}</div>
+    <!-- 수신인 동적 데이터 바인딩 (memberMemo가 없으면 rankTitlekor 출력) -->
+    <div class="info-row">수 신 : {{ member.classNo }}기 {{ member.memberName }} {{ member.memberMemo or member.rankTitlekor }}</div>
     <div class="info-row">제 목 : 충효예 대학 산악회 참석의 건</div>
 
     <div class="divider"></div>
 
     <div class="content-text">
-        <p>1. <span class="bold-text">{{ member.memberName }} {{ member.rankTitlekor }}님</span>의 건승과 무궁한 발전을 기원합니다.</p>
+        <!-- 본문 동적 데이터 바인딩 (memberMemo가 없으면 rankTitlekor 출력) -->
+        <p>1. <span class="bold-text">{{ member.memberName }} {{ member.memberMemo or member.rankTitlekor }}님</span>의 건승과 무궁한 발전을 기원합니다.</p>
         <p>2. 세계 최초로 설립된 사단법인 충효예 대학에서는 푸른 신록이 짙어지고 꽃향기가 가득한 5월, 금정산 산행을 통하여 <span class="bold-text">영원불멸한 충효예 정신으로 총동문회 발전과 건강 증진을 도모</span>하고자 <span class="bold-text">자연과 함께하는 충효예 대학 산악회</span>를 아래와 같이 개최합니다.</p>
     </div>
 

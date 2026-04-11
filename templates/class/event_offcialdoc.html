@@ -61,18 +61,18 @@
                     <!-- 멤버 선택 드롭다운 및 출력 버튼 -->
                     <div class="form-inline">
                         <select id="memberSelect" class="form-control mr-2">
-                            <!-- 전체 출력일 때는 직책 데이터를 비워둡니다 -->
-                            <option value="all" data-ranktitle="">전체 출력</option>
-                            <!-- 백엔드에서 넘어온 members를 반복하여 옵션 생성 (data-ranktitle 추가) -->
+                            <!-- 전체 출력일 때는 메모 데이터를 비워둡니다 -->
+                            <option value="all" data-membermemo="">전체 출력</option>
+                            <!-- 백엔드에서 넘어온 members를 반복하여 옵션 생성 (data-membermemo 추가) -->
                             {% for member in members %}
-                            <option value="{{ member.memberNo }}" data-ranktitle="{{ member.rankTitlekor }}">
+                            <option value="{{ member.memberNo }}" data-membermemo="{{ member.memberMemo }}">
                                 {{ member.memberName }} ({{ member.classNo }}기)
                             </option>
                             {% endfor %}
                         </select>
 
-                        <!-- 직책을 표시하고 수정할 수 있는 텍스트 박스 -->
-                        <input type="text" id="titlekor" value="" class="form-control mr-2" placeholder="직책" disabled>
+                        <!-- 메모를 표시하고 수정할 수 있는 텍스트 박스 -->
+                        <input type="text" id="memberMemo" value="" class="form-control mr-2" placeholder="메모" disabled>
 
                         <button id="printDocBtn" class="btn btn-primary">
                             <i class="fas fa-print fa-sm text-white-50"></i> 문서 출력
@@ -111,17 +111,17 @@
     // 1. 드롭다운 선택 변경 시 이벤트
     document.getElementById('memberSelect').addEventListener('change', function() {
         var selectedOption = this.options[this.selectedIndex];
-        var rankTitle = selectedOption.getAttribute('data-ranktitle') || '';
-        var titlekorInput = document.getElementById('titlekor');
+        var memberMemoValue = selectedOption.getAttribute('data-membermemo') || '';
+        var memberMemoInput = document.getElementById('memberMemo');
 
         if (this.value === 'all') {
             // 전체 출력 선택 시 텍스트 박스 비우고 비활성화
-            titlekorInput.value = '';
-            titlekorInput.disabled = true;
+            memberMemoInput.value = '';
+            memberMemoInput.disabled = true;
         } else {
-            // 특정 회원 선택 시 해당 회원의 직책을 텍스트 박스에 넣고 활성화
-            titlekorInput.value = rankTitle;
-            titlekorInput.disabled = false;
+            // 특정 회원 선택 시 해당 회원의 메모를 텍스트 박스에 넣고 활성화
+            memberMemoInput.value = memberMemoValue;
+            memberMemoInput.disabled = false;
         }
     });
 
@@ -129,15 +129,15 @@
     document.getElementById('printDocBtn').addEventListener('click', function() {
         var selectedMember = document.getElementById('memberSelect').value;
         var eventNo = {{eventno}};
-        var customTitle = document.getElementById('titlekor').value;
+        var customMemo = document.getElementById('memberMemo').value;
 
         // 기본 URL 구성
         var printUrl = `/print_document/${eventNo}?memberNo=${selectedMember}`;
 
         // 특정 회원을 선택했고, 텍스트 박스에 값이 있다면 파라미터로 추가
-        if (selectedMember !== 'all' && customTitle.trim() !== '') {
+        if (selectedMember !== 'all' && customMemo.trim() !== '') {
             // encodeURIComponent를 사용하여 한글 깨짐 방지
-            printUrl += `&customTitle=${encodeURIComponent(customTitle)}`;
+            printUrl += `&customMemo=${encodeURIComponent(customMemo)}`;
         }
 
         window.open(printUrl, '_blank');
