@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 import funchub
 from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_password, get_current_user
 from typing import Optional
+import phapp
 
 dotenv.load_dotenv()
 
@@ -55,6 +56,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(phapp.router)
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
