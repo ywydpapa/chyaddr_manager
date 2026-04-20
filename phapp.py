@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 import funchub
 from funchub import ALGORITHM, JWT_SECRET_KEY, verify_password
 
-from main import get_db
 
 router = APIRouter(
     prefix="/phapp",
@@ -17,6 +16,11 @@ router = APIRouter(
 )
 
 security = HTTPBearer()
+
+async def get_db():
+    from main import async_session
+    async with async_session() as session:
+        yield session
 
 # 모바일 앱 전용 JWT 인증 의존성 함수
 async def get_current_mobile_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -42,7 +46,7 @@ class LoginRequest(BaseModel):
 # 앱 API 엔드포인트 정의
 # ==========================================
 
-@router.post("/login", summary="앱 로그인 및 JWT 발급")
+@router.post("/mlogin", summary="앱 로그인 및 JWT 발급")
 async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     query = text(
         "SELECT userNo, userName, userRole, userPasswd "
