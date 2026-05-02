@@ -134,7 +134,7 @@ async def get_memberdtl(memberno:int, db: AsyncSession):
 
 async def get_memberinfo(memberno:int, db: AsyncSession):
     try:
-        query = text("SELECT a.*, b.catTitle FROM chyMemberinfo a left join chyCategory b on a.catNo = b.catNo where a.memberNo = :memberno and a.attrib not like '%XXX%'")
+        query = text("SELECT a.*, b.catTitle FROM chyMemberInfo a left join chyCategory b on a.catNo = b.catNo where a.memberNo = :memberno and a.attrib not like '%XXX%'")
         result = await db.execute(query, {"memberno": memberno})
         return result.fetchall()
     except Exception:
