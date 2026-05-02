@@ -49,8 +49,8 @@ class LoginRequest(BaseModel):
 @router.post("/mlogin", summary="앱 로그인 및 JWT 발급")
 async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     query = text(
-        "SELECT userNo, userName, userRole, userPasswd "
-        "FROM chyUser WHERE userId = :username"
+        "SELECT memberNo, memberName, activeYN "
+        "FROM chyMember WHERE memberId = :username"
     )
     result = await db.execute(query, {"username": login_data.username})
     user = result.fetchone()
@@ -58,7 +58,7 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
     if not user:
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
 
-    user_no, user_name, user_role, stored_password = user
+    user_no, user_name, activeyn, stored_password = user
 
     # 비밀번호 검증 로직
     authenticated = False
@@ -76,7 +76,6 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
     payload = {
         "sub": str(user_no),
         "name": user_name,
-        "role": user_role,
         "exp": expire
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=ALGORITHM)
@@ -87,7 +86,7 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
         "user_info": {
             "userNo": user_no,
             "userName": user_name,
-            "userRole": user_role
+            "activeYN": activeyn
         }
     }
 
