@@ -132,6 +132,15 @@ async def get_memberdtl(memberno:int, db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(MEMBER_DETAIL)")
 
 
+async def get_memberinfo(memberno:int, db: AsyncSession):
+    try:
+        query = text("SELECT a.*, b.catTitle FROM chyMemberinfo a left join chyCategory b on a.catNo = b.catNo where a.memberNo = :memberno and a.attrib not like '%XXX%'")
+        result = await db.execute(query, {"memberno": memberno})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MEMBER_INFO)")
+
+
 async def get_catgorylist(db: AsyncSession):
     try:
         query = text("SELECT * FROM chyCategory where attrib not like :attpatt")
