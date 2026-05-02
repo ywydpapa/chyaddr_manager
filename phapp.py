@@ -48,8 +48,9 @@ class LoginRequest(BaseModel):
 
 @router.post("/mlogin", summary="앱 로그인 및 JWT 발급")
 async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    # 1. 쿼리에 비밀번호 컬럼(memberPw) 추가
     query = text(
-        "SELECT memberNo, memberName, activeYN "
+        "SELECT memberNo, memberName, activeYN, memberPw "
         "FROM chyMember WHERE memberId = :username"
     )
     result = await db.execute(query, {"username": login_data.username})
@@ -58,13 +59,16 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
     if not user:
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
 
+    # 2. 가져온 데이터에서 stored_password(memberPw) 추출
     user_no, user_name, activeyn, stored_password = user
 
     # 비밀번호 검증 로직
     authenticated = False
     try:
+        # 3. 추출한 stored_password로 검증
         authenticated = verify_password(login_data.password, stored_password)
     except Exception:
+        # 해시 암호화가 안 된 평문 비밀번호인 경우를 위한 예외 처리
         if isinstance(stored_password, str) and stored_password.strip() == login_data.password:
             authenticated = True
 
@@ -89,6 +93,7 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
             "activeYN": activeyn
         }
     }
+
 
 
 @router.get("/members", summary="회원 목록 조회")
