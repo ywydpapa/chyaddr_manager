@@ -112,7 +112,7 @@ async def get_app_memberdtl(memberno: int,
         current_user: str = Depends(get_current_mobile_user)
 ):
     member_dtl = await funchub.get_memberdtl(memberno , db)
-    member_info = await funchub.get_memberinfo(db, memberno)
+    member_info = await funchub.get_memberinfo(memberno, db)
     return {"memberinfo": [dict(row._mapping) for row in member_info], "memberdtl": dict(member_dtl._mapping)}
 
 
