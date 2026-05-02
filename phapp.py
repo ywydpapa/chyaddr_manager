@@ -130,7 +130,7 @@ async def get_app_classes(classno: int,
         db: AsyncSession = Depends(get_db),
         current_user: str = Depends(get_current_mobile_user)
 ):
-    class_list = await funchub.get_classmemberlist(classno, db)
+    class_list = await funchub.get_classmemberlist(db, classno)
     # SQLAlchemy Row 객체를 JSON 직렬화 가능한 dict로 변환
     return {"classmembers": [dict(row._mapping) for row in class_list]}
 
