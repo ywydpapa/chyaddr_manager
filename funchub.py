@@ -123,6 +123,15 @@ async def get_memberlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(MEMBER_LIST)")
 
 
+async def get_memberdtl(memberno:int, db: AsyncSession):
+    try:
+        query = text("SELECT * FROM chyMember where memberNo = :memberno")
+        result = await db.execute(query, {"memberno": memberno})
+        return result.fetchone()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MEMBER_DETAIL)")
+
+
 async def get_catgorylist(db: AsyncSession):
     try:
         query = text("SELECT * FROM chyCategory where attrib not like :attpatt")
@@ -139,6 +148,15 @@ async def get_classlist(db: AsyncSession):
         return result.fetchall()
     except Exception:
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
+
+
+async def get_myclasslist(memberno:int, db: AsyncSession):
+    try:
+        query = text("SELECT a.*, COUNT(b.memberNo) AS memberCount FROM chyClass a LEFT JOIN chyClassmember b ON a.classNo = b.classNo where a.attrib not like :attpatt GROUP BY a.classNo")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(MY CLASS_LIST)")
 
 
 async def get_eventlist(db: AsyncSession):

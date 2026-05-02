@@ -102,6 +102,25 @@ async def get_app_members(
     return {"members": [dict(row._mapping) for row in member_list]}
 
 
+@router.get("/memberdtl/{memberno}", summary="회원 목록 조회")
+async def get_app_memberdtl(memberno: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    member_dtl = await funchub.get_memberdtl( memberno , db)
+    return {"memberdtl": [dict(row._mapping) for row in member_dtl]}
+
+
+@router.get("/classes", summary="회원 목록 조회")
+async def get_app_classes(
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    class_list = await funchub.get_classlist(db)
+    # SQLAlchemy Row 객체를 JSON 직렬화 가능한 dict로 변환
+    return {"classes": [dict(row._mapping) for row in class_list]}
+
+
 @router.get("/events", summary="행사 목록 조회")
 async def get_app_events(
         db: AsyncSession = Depends(get_db),
