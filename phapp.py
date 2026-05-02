@@ -50,7 +50,7 @@ class LoginRequest(BaseModel):
 async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     # 1. 쿼리에 비밀번호 컬럼(memberPw) 추가
     query = text(
-        "SELECT memberNo, memberName, activeYN, memberPw "
+        "SELECT memberNo, memberName, activeYN, memberPasswd "
         "FROM chyMember WHERE memberId = :username"
     )
     result = await db.execute(query, {"username": login_data.username})
