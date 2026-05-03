@@ -195,7 +195,7 @@ async def minus_eventmember(
         current_user: str = Depends(get_current_mobile_user)
 ):
     try:
-        query = text(f"update chyEventmember set attrib = :xxxup where eventNo = :eventno and memberNo = :memberno)")
+        query = text(f"update chyEventmember set attrib = :xxxup where eventNo = :eventno and memberNo = :memberno")
         await db.execute(query, {"eventno": eventno, "memberno": memberno, "xxxup": 'XXXUPXXXUP'})
         await db.commit()
         return {"result": "ok"}
