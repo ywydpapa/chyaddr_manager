@@ -322,6 +322,18 @@ async def get_classmemberlist(db: AsyncSession, classno: int):
         raise HTTPException(status_code=500, detail="Database query failed(ClassMemberLIST)")
 
 
+async def get_rankmemberlist(db: AsyncSession):
+    try:
+        query = text(
+            "SELECT lm.*, m.memberName, r.rankTitlekor FROM chyClassmember lm left join chyMember m on lm.memberNo = m.memberNo left join chyRank r on lm.classRank = r.rankNo "
+            "where lm.attrib not like :xxxup")
+        result = await db.execute(query, {"xxxup": "%XXX%"})
+        return result.fetchall()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Database query failed(allRankMemberLIST)")
+
+
 async def get_eventmemberlist(db: AsyncSession, eventno: int):
     try:
         query = text(
