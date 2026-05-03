@@ -179,7 +179,7 @@ async def get_myclasslist(memberno:int, db: AsyncSession):
 
 async def get_eventlist(db: AsyncSession):
     try:
-        query = text("SELECT a.*, COUNT(b.memberNo) AS memberCount FROM chyEvent a LEFT JOIN chyEventmember b ON a.eventNo = b.eventNo where a.attrib not like :attpatt GROUP BY a.eventNo")
+        query = text("SELECT a.*, COUNT(b.memberNo) AS memberCount FROM chyEvent a LEFT JOIN chyEventmember b ON a.eventNo = b.eventNo and b.attrib not like :attpatt where a.attrib not like :attpatt GROUP BY a.eventNo")
         result = await db.execute(query, {"attpatt": "%XXX%"})
         return result.fetchall()
     except Exception:
