@@ -349,8 +349,8 @@ async def get_eventmemberlist(db: AsyncSession, eventno: int):
             "SELECT lm.*, m.memberName, r.rankTitlekor, e.eventTitle, f.classNo FROM chyEventmember lm left join chyMember m on lm.memberNo = m.memberNo left join chyRank r on lm.classRank = r.rankNo "
             "LEFT JOIN chyEvent e on lm.eventNo = e.eventNo "
             "LEFT JOIN chyClassmember f on lm.memberNo = f.memberNo "
-            "where lm.eventNo = :eventno group by lm.memberNo")
-        result = await db.execute(query, {"eventno": eventno})
+            "where lm.eventNo = :eventno and lm.attrib not like :xxxup group by lm.memberNo")
+        result = await db.execute(query, {"eventno": eventno, "xxxup": "%XXX%"})
         return result.fetchall()
     except Exception as e:
         print(e)
