@@ -174,6 +174,34 @@ async def get_app_event_detail(
     }
 
 
+@router.get("/emember_add/{eventno}/{memberno}", summary="특정 행사 상세 및 참석자 조회")
+async def add_eventmember(
+        memberno: int,eventno:int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    try:
+        query = text(f"insert into chyEventmember (eventNo, memberNo) values (:eventno, :memberno)")
+        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        await db.commit()
+        return {"result": "ok"}
+    except Exception as e:
+        return {"result": "error"}
+
+@router.get("/emember_minus/{eventno}/{memberno}", summary="특정 행사 상세 및 참석자 조회")
+async def minus_eventmember(
+        memberno: int,eventno:int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    try:
+        query = text(f"update chyEventmember set attrib = :xxxup where eventNo = :eventno and memberNo = :memberno)")
+        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        await db.commit()
+        return {"result": "ok"}
+    except Exception as e:
+        return {"result": "error"}
+
 # ==========================================
 # ★ 신규 추가: 게시판(자료실) 관련 API
 # ==========================================
