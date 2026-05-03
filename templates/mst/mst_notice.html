@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>충효예대학 원우관리 - 공지사항</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+    /* 본문 컨테이너 (중앙 정렬 및 너비 제한) */
+    .info-container {
+        background-color: #ffffff;
+        max-width: 1000px; /* 게시판 목록은 폼보다 조금 더 넓게 설정 */
+        margin: 0 auto;
+        padding: 3rem 2.5rem;
+        border-radius: 12px;
+        color: #333;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e8dcc8;
+    }
+
+    /* 메인 타이틀 */
+    .main-title {
+        color: #5a3d2b;
+        font-weight: 700;
+        font-size: 2.2rem;
+        font-family: 'Gungsuh', '궁서', serif;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    /* 게시판 테이블 스타일 */
+    .board-table {
+        background-color: #ffffff;
+        border-top: 2px solid #5a3d2b;
+        border-bottom: 1px solid #5a3d2b;
+        margin-bottom: 0;
+    }
+    .board-table th {
+        background-color: #f5efe6;
+        color: #4a3b32;
+        font-weight: 600;
+        text-align: center;
+        padding: 1rem 0.5rem;
+        border-bottom: 1px solid #dcdcdc;
+        border-top: none;
+    }
+    .board-table td {
+        padding: 1rem 0.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e8dcc8;
+        color: #444;
+    }
+    .board-table tbody tr:hover {
+        background-color: #fcfaf8;
+    }
+
+    /* 공지사항 행 강조 */
+    .notice-row {
+        background-color: #fdf8f4 !important;
+        font-weight: 600;
+    }
+    .notice-badge {
+        background-color: #8b5e34;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    /* 제목 열 스타일 */
+    .title-cell {
+        text-align: left !important;
+        padding-left: 1.5rem !important;
+    }
+    .title-cell a {
+        color: #333;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .title-cell a:hover {
+        color: #8b5e34;
+        text-decoration: underline;
+    }
+
+    /* 버튼 스타일 */
+    .btn-custom {
+        background-color: #8b5e34;
+        color: #fff;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+    .btn-custom:hover {
+        background-color: #6b4624;
+        color: #fff;
+    }
+
+    /* 페이지네이션 스타일 */
+    .pagination .page-link {
+        color: #5a3d2b;
+        border-color: #e8dcc8;
+        background-color: #fff;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #8b5e34;
+        border-color: #8b5e34;
+        color: #fff;
+    }
+    .pagination .page-link:hover {
+        background-color: #f5efe6;
+    }
+
+    /* 검색창 스타일 */
+    .search-box {
+        max-width: 450px;
+        margin: 0 auto;
+    }
+    .search-input {
+        border: 1px solid #d4c5b4;
+    }
+    .search-input:focus {
+        border-color: #8b5e34;
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 52, 0.25);
+    }
+    .search-btn {
+        background-color: #5a3d2b;
+        color: white;
+        border: 1px solid #5a3d2b;
+    }
+    .search-btn:hover {
+        background-color: #3d291d;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .info-container { padding: 2rem 1rem; }
+        .hide-on-mobile { display: none; } /* 모바일에서는 작성일, 조회수 등 숨김 처리 */
+        .title-cell { padding-left: 0.5rem !important; }
+    }
+    </style>
+</head>
+<body id="page-top">
+<!-- Page Wrapper -->
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            {% include 'common/topbar.html' %}
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid py-4">
+
+                <div class="info-container">
+                    <h2 class="main-title">공지사항</h2>
+
+                    <!-- 총 게시물 수 -->
+                    <div class="d-flex justify-content-between align-items-end mb-2">
+                        <div style="font-size: 0.95rem; color: #555;">
+                            총 <span style="color: #8b5e34; font-weight: bold; font-size: 1.1rem;">{{ total_count | default(0) }}</span>건의 자료가 있습니다.
+                        </div>
+                    </div>
+
+                    <!-- 게시판 테이블 -->
+                    <div class="table-responsive mb-4">
+                        <table class="table board-table text-center">
+                            <thead>
+                            <tr>
+                                <th style="width: 8%;">번호</th>
+                                <th style="width: 50%;">제목</th>
+                                <th style="width: 8%;">첨부</th>
+                                <th style="width: 12%;">작성자</th>
+                                <th style="width: 12%;" class="hide-on-mobile">작성일</th>
+                                <th style="width: 10%;" class="hide-on-mobile">조회</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- DB에서 넘어온 notices 리스트 반복 출력 -->
+                            {% for notice in notices %}
+                            <tr class="{% if notice.is_notice == 'Y' %}notice-row{% endif %}">
+                                <!-- 번호 또는 공지 뱃지 -->
+                                <td>
+                                    {% if notice.is_notice == 'Y' %}
+                                    <span class="notice-badge">공지</span>
+                                    {% else %}
+                                    {{ notice.id }}
+                                    {% endif %}
+                                </td>
+
+                                <!-- 제목 -->
+                                <td class="title-cell">
+                                    <a href="/notice/{{ notice.id }}">{{ notice.title }}</a>
+                                </td>
+
+                                <!-- 첨부파일 아이콘 (파일이 있을 경우에만 표시) -->
+                                <td>
+                                    {% if notice.files and notice.files|length > 0 %}
+                                    <i class="fas fa-paperclip text-secondary" style="font-size: 1.1rem;"></i>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 작성자 -->
+                                <td>{{ notice.author }}</td>
+
+                                <!-- 작성일 (YYYY.MM.DD 형식으로 포맷) -->
+                                <td class="hide-on-mobile">{{ notice.created_at.strftime('%Y.%m.%d') }}</td>
+
+                                <!-- 조회수 -->
+                                <td class="hide-on-mobile">{{ notice.view_count }}</td>
+                            </tr>
+                            {% else %}
+                            <!-- 게시글이 없을 경우 -->
+                            <tr>
+                                <td colspan="6" class="py-5 text-muted">등록된 게시글이 없습니다.</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 하단 버튼 및 페이지네이션 -->
+                    <div class="d-flex justify-content-between align-items-center mb-5">
+                        <!-- 좌측 여백용 (flex-between 균형을 맞추기 위함) -->
+                        <div style="width: 85px;"></div>
+
+                        <!-- 페이지네이션 -->
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">이전</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">다음</a>
+                                </li>
+                            </ul>
+                        </nav>
+
+                        <!-- 글쓰기 버튼 -->
+                        <a href="/new_notice" style="text-decoration: none;">
+                            <button class="btn btn-custom"><i class="fas fa-pen mr-1"></i> 글쓰기</button>
+                        </a>
+                    </div>
+
+                    <!-- 검색창 (Bootstrap 4 Input Group 스타일 적용) -->
+                    <form action="/notice" method="GET" class="search-box">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <select name="search_type" class="custom-select" style="border-color: #d4c5b4; border-radius: 4px 0 0 4px; box-shadow: none;">
+                                    <option value="title" selected>제목</option>
+                                    <option value="content">내용</option>
+                                    <option value="author">작성자</option>
+                                </select>
+                            </div>
+                            <input type="text" name="keyword" class="form-control search-input" placeholder="검색어를 입력하세요">
+                            <div class="input-group-append">
+                                <button class="btn search-btn" type="submit"><i class="fas fa-search mr-1"></i> 검색</button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- End of Main Content -->
+
+        {% include 'common/footer.html' %}
+    </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Bootstrap core JavaScript-->
+{% include 'common/adscript.html' %}
+</body>
+</html>

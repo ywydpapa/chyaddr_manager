@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>충효예대학 원우관리 - 자료실 글쓰기</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+    /* 본문 컨테이너 (중앙 정렬 및 너비 제한) */
+    .info-container {
+        background-color: #ffffff;
+        max-width: 900px; /* 폼이 너무 넓어지지 않도록 제한 */
+        margin: 0 auto;   /* 중앙 정렬 */
+        padding: 3rem 2.5rem;
+        border-radius: 12px;
+        color: #333;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e8dcc8;
+    }
+
+    /* 메인 타이틀 */
+    .main-title {
+        color: #5a3d2b;
+        font-weight: 700;
+        font-size: 2rem;
+        font-family: 'Gungsuh', '궁서', serif;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    /* 폼 입력 영역 전체 래퍼 (표 느낌의 테두리) */
+    .write-form-wrap {
+        border-top: 2px solid #5a3d2b;
+        border-bottom: 1px solid #e8dcc8;
+    }
+
+    /* 개별 입력 행 (Flexbox로 라벨과 입력칸 가로 정렬) */
+    .custom-form-row {
+        display: flex;
+        border-bottom: 1px solid #e8dcc8;
+        margin: 0;
+    }
+
+    /* 마지막 행은 하단 테두리 제거 */
+    .custom-form-row:last-child {
+        border-bottom: none;
+    }
+
+    /* 라벨(제목) 영역 */
+    .form-label-col {
+        width: 160px;
+        background-color: #fdf8f4;
+        padding: 1.2rem 1rem;
+        font-weight: 600;
+        color: #4a3b32;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid #e8dcc8;
+        text-align: center;
+    }
+
+    /* 실제 입력(Input) 영역 */
+    .form-input-col {
+        flex: 1;
+        padding: 1.2rem 1.5rem;
+        background-color: #ffffff;
+    }
+
+    /* 입력 폼 컨트롤 포커스 색상 변경 */
+    .form-control:focus {
+        border-color: #8b5e34;
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 52, 0.25);
+    }
+
+    /* 버튼 스타일 */
+    .btn-custom {
+        background-color: #8b5e34;
+        color: #fff;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+    .btn-custom:hover {
+        background-color: #6b4624;
+        color: #fff;
+    }
+
+    /* 취소 버튼 스타일 (아웃라인) */
+    .btn-outline-custom {
+        background-color: #fff;
+        color: #8b5e34;
+        border: 1px solid #8b5e34;
+        padding: 10px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-outline-custom:hover {
+        background-color: #fdf8f4;
+        color: #5a3d2b;
+    }
+
+    /* 모바일 반응형 처리 */
+    @media (max-width: 768px) {
+        .info-container {
+            padding: 2rem 1rem;
+        }
+        .custom-form-row {
+            flex-direction: column; /* 모바일에서는 상하로 배치 */
+        }
+        .form-label-col {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #e8dcc8;
+            justify-content: flex-start;
+            padding: 0.8rem 1rem;
+        }
+        .form-input-col {
+            padding: 1rem;
+        }
+        .form-label-col[style*="align-items: flex-start"] {
+            padding-top: 0.8rem !important;
+        }
+    }
+    </style>
+</head>
+<body id="page-top">
+<!-- Page Wrapper -->
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            {% include 'common/topbar.html' %}
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid py-4">
+
+                <!-- 글쓰기 폼 컨테이너 -->
+                <div class="info-container">
+                    <h2 class="main-title">새로운 공지사항 작성</h2>
+
+                    <form action="/new_notice" method="POST" enctype="multipart/form-data">
+                        <div class="write-form-wrap">
+
+                            <!-- 옵션 (공지사항 체크) -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">옵션</div>
+                                <div class="form-input-col">
+                                    <div class="form-check d-flex align-items-center h-100">
+                                        <input class="form-check-input mt-0" type="checkbox" name="noticeCheck" value="Y" id="noticeCheck" style="border-color: #8b5e34;">
+                                        <label class="form-check-label ml-2" for="noticeCheck" style="color: #4a3b32; font-weight: 500;">
+                                            공지사항으로 등록
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 제목 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">제목</div>
+                                <div class="form-input-col">
+                                    <input type="text" class="form-control" name="title" placeholder="제목을 입력하세요" required>
+                                </div>
+                            </div>
+
+                            <!-- 작성자 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">작성자</div>
+                                <div class="form-input-col">
+                                    <input type="text" class="form-control" name="author" placeholder="작성자명" style="max-width: 250px;" required>
+                                </div>
+                            </div>
+
+                            <!-- 비밀번호 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">비밀번호</div>
+                                <div class="form-input-col">
+                                    <input type="password" class="form-control" name="password" placeholder="수정/삭제 시 사용할 비밀번호" style="max-width: 250px;" required>
+                                    <div class="form-text mt-2" style="font-size: 0.85rem; color: #777;">
+                                        <i class="fas fa-info-circle mr-1"></i> 게시글 수정 및 삭제 시 필요합니다.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 첨부파일 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">첨부파일</div>
+                                <div class="form-input-col">
+                                    <input class="form-control" type="file" id="formFileMultiple" name="files" multiple>
+                                    <div class="form-text mt-2" style="font-size: 0.85rem; color: #777;">
+                                        <i class="fas fa-info-circle mr-1"></i> 최대 20MB 이하의 파일만 업로드 가능합니다. (Ctrl 키를 누른 상태로 여러 파일 선택 가능)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 내용 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col" style="align-items: flex-start; padding-top: 1.5rem;">내용</div>
+                                <div class="form-input-col">
+                                    <textarea class="form-control" name="content" rows="12" placeholder="내용을 입력하세요" required></textarea>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- 하단 버튼 영역 -->
+                        <div class="d-flex justify-content-center mt-5">
+                            <button type="button" class="btn btn-outline-custom mr-3" onclick="history.back();">취소</button>
+                            <button type="submit" class="btn btn-custom">등록하기</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- End of Main Content -->
+
+        {% include 'common/footer.html' %}
+    </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Bootstrap core JavaScript-->
+{% include 'common/adscript.html' %}
+</body>
+</html>

@@ -105,6 +105,15 @@ async def get_memberlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(MEMBER_LIST)")
 
 
+async def get_noticelist(db: AsyncSession):
+    try:
+        query = text("SELECT * FROM addrNotice where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(NOTICE_LIST)")
+
+
 async def get_ranklist(db: AsyncSession):
     try:
         query = text("SELECT * FROM chyRank where attrib not like :attpatt")

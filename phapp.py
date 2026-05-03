@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta
 
 import funchub
 from funchub import ALGORITHM, JWT_SECRET_KEY, verify_password
+from models import Notice, NoticeFile      # 게시판 모델 추가 임포트
 
 
 router = APIRouter(
@@ -95,7 +98,6 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
     }
 
 
-
 @router.get("/members", summary="회원 목록 조회")
 async def get_app_members(
         db: AsyncSession = Depends(get_db),
@@ -169,4 +171,84 @@ async def get_app_event_detail(
     return {
         "event_info": dict(event_dtl._mapping),
         "members": [dict(row._mapping) for row in event_members]
+    }
+
+
+# ==========================================
+# ★ 신규 추가: 게시판(자료실) 관련 API
+# ==========================================
+
+@router.get("/notices", summary="게시판 목록 조회")
+async def get_app_notices(
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    # 삭제된 글('XXXUPXXXUP') 제외, 공지사항 우선, 최신순 정렬
+    stmt = (
+        select(Notice)
+        .filter(Notice.attrib != 'XXXUPXXXUP')
+        .order_by(Notice.is_notice.desc(), Notice.id.desc())
+    )
+    result = await db.execute(stmt)
+    notices = result.scalars().all()
+
+    # 목록 반환 (내용은 제외하고 가볍게 전송)
+    notice_list = []
+    for n in notices:
+        notice_list.append({
+            "id": n.id,
+            "title": n.title,
+            "author": n.author,
+            "is_notice": n.is_notice,
+            "view_count": n.view_count,
+            "created_at": n.created_at
+        })
+
+    return {"notices": notice_list}
+
+
+@router.get("/notices/{notice_id}", summary="게시판 상세 조회 및 읽기 확인")
+async def get_app_notice_detail(
+        notice_id: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    # 해당 게시글 및 첨부파일 조회 (삭제된 글 제외)
+    stmt = select(Notice).options(selectinload(Notice.files)).filter(
+        Notice.id == notice_id,
+        Notice.attrib != 'XXXUPXXXUP'
+    )
+    result = await db.execute(stmt)
+    notice = result.scalar_one_or_none()
+
+    if not notice:
+        raise HTTPException(status_code=404, detail="삭제되었거나 존재하지 않는 게시글입니다.")
+
+    # 조회수 1 증가 (읽기 확인)
+    notice.view_count += 1
+    await db.commit()
+    await db.refresh(notice)
+
+    # 첨부파일 리스트 정리
+    files = []
+    for f in notice.files:
+        files.append({
+            "id": f.id,
+            "original_name": f.original_name,
+            "saved_name": f.saved_name,
+            "file_size": f.file_size,
+            "file_url": f"/static/uploads/{f.saved_name}" # 앱에서 다운로드할 수 있는 경로 제공
+        })
+
+    return {
+        "notice": {
+            "id": notice.id,
+            "title": notice.title,
+            "author": notice.author,
+            "content": notice.content, # 상세 조회이므로 본문 포함
+            "is_notice": notice.is_notice,
+            "view_count": notice.view_count,
+            "created_at": notice.created_at
+        },
+        "files": files
     }

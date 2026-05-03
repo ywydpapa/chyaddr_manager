@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>충효예대학 원우관리 - 자료실 글 수정</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+    /* 본문 컨테이너 (중앙 정렬 및 너비 제한) */
+    .info-container {
+        background-color: #ffffff;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 3rem 2.5rem;
+        border-radius: 12px;
+        color: #333;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e8dcc8;
+    }
+
+    .main-title {
+        color: #5a3d2b;
+        font-weight: 700;
+        font-size: 2rem;
+        font-family: 'Gungsuh', '궁서', serif;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .write-form-wrap {
+        border-top: 2px solid #5a3d2b;
+        border-bottom: 1px solid #e8dcc8;
+    }
+
+    .custom-form-row {
+        display: flex;
+        border-bottom: 1px solid #e8dcc8;
+        margin: 0;
+    }
+
+    .custom-form-row:last-child {
+        border-bottom: none;
+    }
+
+    .form-label-col {
+        width: 160px;
+        background-color: #fdf8f4;
+        padding: 1.2rem 1rem;
+        font-weight: 600;
+        color: #4a3b32;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid #e8dcc8;
+        text-align: center;
+    }
+
+    .form-input-col {
+        flex: 1;
+        padding: 1.2rem 1.5rem;
+        background-color: #ffffff;
+    }
+
+    .form-control:focus {
+        border-color: #8b5e34;
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 52, 0.25);
+    }
+
+    .btn-custom {
+        background-color: #8b5e34;
+        color: #fff;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+    .btn-custom:hover {
+        background-color: #6b4624;
+        color: #fff;
+    }
+
+    .btn-outline-custom {
+        background-color: #fff;
+        color: #8b5e34;
+        border: 1px solid #8b5e34;
+        padding: 10px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-outline-custom:hover {
+        background-color: #fdf8f4;
+        color: #5a3d2b;
+    }
+
+    @media (max-width: 768px) {
+        .info-container { padding: 2rem 1rem; }
+        .custom-form-row { flex-direction: column; }
+        .form-label-col {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #e8dcc8;
+            justify-content: flex-start;
+            padding: 0.8rem 1rem;
+        }
+        .form-input-col { padding: 1rem; }
+        .form-label-col[style*="align-items: flex-start"] { padding-top: 0.8rem !important; }
+    }
+    </style>
+</head>
+<body id="page-top">
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            {% include 'common/topbar.html' %}
+            <div class="container-fluid py-4">
+                <div class="info-container">
+                    <h2 class="main-title">자료실 글 수정</h2>
+
+                    <form action="/notice/{{ notice.id }}/edit" method="POST" enctype="multipart/form-data">
+                        <div class="write-form-wrap">
+
+                            <!-- 옵션 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">옵션</div>
+                                <div class="form-input-col">
+                                    <div class="form-check d-flex align-items-center h-100">
+                                        <input class="form-check-input mt-0" type="checkbox" name="noticeCheck" value="Y" id="noticeCheck" style="border-color: #8b5e34;" {% if notice.is_notice == 'Y' %}checked{% endif %}>
+                                        <label class="form-check-label ml-2" for="noticeCheck" style="color: #4a3b32; font-weight: 500;">
+                                            공지사항으로 등록
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 제목 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">제목</div>
+                                <div class="form-input-col">
+                                    <input type="text" class="form-control" name="title" value="{{ notice.title }}" required>
+                                </div>
+                            </div>
+
+                            <!-- 작성자 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">작성자</div>
+                                <div class="form-input-col">
+                                    <input type="text" class="form-control" name="author" value="{{ notice.author }}" style="max-width: 250px;" required>
+                                </div>
+                            </div>
+
+                            <!-- ★ 비밀번호 확인 (추가됨) ★ -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">비밀번호 확인</div>
+                                <div class="form-input-col">
+                                    <input type="password" class="form-control" name="password" placeholder="게시글 작성 시 입력한 비밀번호" style="max-width: 250px;" required>
+                                    <div class="form-text mt-2" style="font-size: 0.85rem; color: #dc3545;">
+                                        <i class="fas fa-exclamation-circle mr-1"></i> 글을 수정하려면 작성 시 설정한 비밀번호를 입력해야 합니다.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 첨부파일 추가 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col">파일 추가</div>
+                                <div class="form-input-col">
+                                    {% if notice.files %}
+                                    <div class="mb-3 p-3" style="background-color: #fcfaf8; border: 1px solid #e8dcc8; border-radius: 6px; font-size: 0.9rem;">
+                                        <strong style="color: #5a3d2b; display: block; margin-bottom: 8px;">
+                                            <i class="fas fa-paperclip mr-1"></i>현재 첨부된 파일:
+                                        </strong>
+                                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 10px;">
+                                            {% for file in notice.files %}
+                                            <li style="margin-bottom: 4px; color: #444;">
+                                                <i class="far fa-file-alt mr-2" style="color: #8b5e34;"></i>{{ file.original_name }}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+
+                                    <input class="form-control" type="file" id="formFileMultiple" name="files" multiple>
+                                    <div class="form-text mt-2" style="font-size: 0.85rem; color: #777;">
+                                        <i class="fas fa-info-circle mr-1"></i> 추가로 업로드할 파일을 선택하세요. (기존 파일은 유지됩니다)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 내용 -->
+                            <div class="custom-form-row">
+                                <div class="form-label-col" style="align-items: flex-start; padding-top: 1.5rem;">내용</div>
+                                <div class="form-input-col">
+                                    <textarea class="form-control" name="content" rows="15" required>{{ notice.content }}</textarea>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- 하단 버튼 영역 -->
+                        <div class="d-flex justify-content-center mt-5">
+                            <button type="button" class="btn btn-outline-custom mr-3" onclick="history.back();">취소</button>
+                            <button type="submit" class="btn btn-custom">수정 완료</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+        {% include 'common/footer.html' %}
+    </div>
+</div>
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+{% include 'common/adscript.html' %}
+</body>
+</html>
