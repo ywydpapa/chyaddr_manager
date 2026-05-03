@@ -196,7 +196,7 @@ async def minus_eventmember(
 ):
     try:
         query = text(f"update chyEventmember set attrib = :xxxup where eventNo = :eventno and memberNo = :memberno)")
-        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        await db.execute(query, {"eventno": eventno, "memberno": memberno, "xxxup": 'XXXUPXXXUP'})
         await db.commit()
         return {"result": "ok"}
     except Exception as e:
