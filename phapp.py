@@ -164,10 +164,10 @@ async def get_app_event_detail(
 ):
     event_dtl = await funchub.get_eventdetail(db, eventno)
     event_members = await funchub.get_eventmemberlist(db, eventno)
-
     if not event_dtl:
         raise HTTPException(status_code=404, detail="행사를 찾을 수 없습니다.")
-
+    print(event_dtl)
+    print(event_members)
     return {
         "event_info": dict(event_dtl._mapping),
         "members": [dict(row._mapping) for row in event_members]
