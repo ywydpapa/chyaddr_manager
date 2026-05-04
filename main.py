@@ -828,3 +828,8 @@ async def update_eventmember_info(request: Request, db: AsyncSession = Depends(g
         print(f"Update Event Member Error: {e}")
         await db.rollback()
         return {"result": "error"}
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy(request: Request):
+    return templates.TemplateResponse("privacy/privacy.htm", {"request": request})
