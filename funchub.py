@@ -132,6 +132,15 @@ async def get_memberlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(MEMBER_LIST)")
 
 
+async def get_memberlistwclass(db: AsyncSession):
+    try:
+        query = text("SELECT a.*,b.classNo FROM chyMember a left join chyClassmember b on b.memberNo = a.memberNo where a.attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(classMEMBER_LIST)")
+
+
 async def get_memberdtl(memberno:int, db: AsyncSession):
     try:
         query = text("SELECT * FROM chyMember where memberNo = :memberno")

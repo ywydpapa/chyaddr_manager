@@ -61,14 +61,14 @@
                                 <thead style="text-align: center">
                                 <th>회원번호</th>
                                 <th>회원성명</th>
-                                <th>성별</th>
+                                <th>기수</th>
                                 <th>기능</th>
                                 </thead>
                                 {% for amember in member_list %}
                                 <tr style="text-align: center">
                                     <td>{{ amember[0] }}</td>
                                     <td>{{ amember[1] }}</td>
-                                    <td>{{ amember[4] }}</td>
+                                    <td>{{ amember[14] }}기</td>
                                     <td>
                                         <button class="btn-facebook add-member-btn" data-eventno="{{ eventno }}"
                                                 data-memberno="{{ amember[0] }}"> 참가회원추가

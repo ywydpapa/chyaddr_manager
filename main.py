@@ -527,7 +527,7 @@ async def getclassmembers(request: Request, classno: int, db: AsyncSession = Dep
 
 @app.get("/event_members/{eventno}", response_class=HTMLResponse)
 async def classmembers(request: Request,eventno:int ,db: AsyncSession = Depends(get_db)):
-    member_list = await funchub.get_memberlist(db)
+    member_list = await funchub.get_memberlistwclass(db)
     cmember_list = await funchub.get_eventmemberlist(db, eventno)
     ranks = await funchub.get_ranklist(db)
     return templates.TemplateResponse(request=request, name="class/event_members.html", context={
