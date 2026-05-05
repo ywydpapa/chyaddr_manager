@@ -202,6 +202,22 @@ async def minus_eventmember(
     except Exception as e:
         return {"result": "error"}
 
+
+@router.get("/update_mask/{mskidx}/{memberno}", summary="개인정보 노출 조절")
+async def msk_update(
+        memberno: int,mskidx: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    try:
+        query = text(f"update chyMember set maskIndex = :mskidx where memberNo = :memberno")
+        await db.execute(query, {"mskidx": mskidx, "memberno": memberno})
+        await db.commit()
+        return {"result": "ok"}
+    except Exception as e:
+        return {"result": "error"}
+
+
 # ==========================================
 # ★ 신규 추가: 게시판(자료실) 관련 API
 # ==========================================
