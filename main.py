@@ -833,3 +833,7 @@ async def update_eventmember_info(request: Request, db: AsyncSession = Depends(g
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
     return templates.TemplateResponse("privacy/privacy.htm", {"request": request})
+
+@app.get("/contactus", response_class=HTMLResponse)
+async def contactus(request: Request):
+    return templates.TemplateResponse("privacy/contactus.html", {"request": request})

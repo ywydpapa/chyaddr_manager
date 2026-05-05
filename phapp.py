@@ -45,6 +45,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class RequestMessage(BaseModel):
+    memberNo: str
+    message: str
+
 # ==========================================
 # 앱 API 엔드포인트 정의
 # ==========================================
@@ -314,3 +318,14 @@ async def get_app_notice_detail(
         },
         "files": files
     }
+
+@router.post("/requestmessage")
+async def phapprequest_message(req: RequestMessage, db: AsyncSession = Depends(get_db)):
+    try:
+        query = text("INSERT INTO requestMessage (memberNo, message) VALUES (:memberNo, :message)")
+        await db.execute(query, {"memberNo": req.memberNo, "message": req.message})
+        await db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        print("request_message error:", e)
+        raise HTTPException(status_code=500, detail="DB 저장 중 오류 발생")
