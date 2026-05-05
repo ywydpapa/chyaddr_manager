@@ -175,19 +175,36 @@ async def get_app_event_detail(
     }
 
 
-@router.get("/emember_add/{eventno}/{memberno}", summary="특정 행사 상세 및 참석자 조회")
+@router.get("/emember_add/{eventno}/{memberno}", summary="행사 참석자 추가")
 async def add_eventmember(
-        memberno: int,eventno:int,
+        memberno: int, eventno: int,
         db: AsyncSession = Depends(get_db),
         current_user: str = Depends(get_current_mobile_user)
 ):
     try:
-        query = text(f"insert into chyEventmember (eventNo, memberNo) values (:eventno, :memberno)")
-        await db.execute(query, {"eventno": eventno, "memberno": memberno})
+        check_query = text("""
+                           SELECT 1
+                           FROM chyEventmember
+                           WHERE eventNo = :eventno
+                             AND memberNo = :memberno and attrib = '1000010000'
+                           """)
+        result = await db.execute(check_query, {"eventno": eventno, "memberno": memberno})
+        exists = result.scalar()
+
+        if exists:
+            return {"result": "already_exists", "message": "이미 참석 등록된 회원입니다."}
+
+        insert_query = text("""
+                            INSERT INTO chyEventmember (eventNo, memberNo)
+                            VALUES (:eventno, :memberno)
+                            """)
+        await db.execute(insert_query, {"eventno": eventno, "memberno": memberno})
         await db.commit()
-        return {"result": "ok"}
+        return {"result": "ok", "message": "참석 등록이 완료되었습니다."}
     except Exception as e:
-        return {"result": "error"}
+        await db.rollback()
+        return {"result": "error", "message": str(e)}
+
 
 @router.get("/emember_minus/{eventno}/{memberno}", summary="특정 행사 상세 및 참석자 조회")
 async def minus_eventmember(
