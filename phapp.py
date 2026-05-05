@@ -53,7 +53,7 @@ class LoginRequest(BaseModel):
 async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     # 1. 쿼리에 비밀번호 컬럼(memberPw) 추가
     query = text(
-        "SELECT memberNo, memberName, activeYN, memberPasswd "
+        "SELECT memberNo, memberName, activeYN, memberPasswd, maskIndex "
         "FROM chyMember WHERE memberId = :username"
     )
     result = await db.execute(query, {"username": login_data.username})
@@ -63,7 +63,7 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
 
     # 2. 가져온 데이터에서 stored_password(memberPw) 추출
-    user_no, user_name, activeyn, stored_password = user
+    user_no, user_name, activeyn, stored_password, mask_index = user
 
     # 비밀번호 검증 로직
     authenticated = False
@@ -93,7 +93,8 @@ async def app_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)
         "user_info": {
             "userNo": user_no,
             "userName": user_name,
-            "activeYN": activeyn
+            "activeYN": activeyn,
+            "maskIndex": mask_index,
         }
     }
 
