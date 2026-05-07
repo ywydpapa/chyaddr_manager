@@ -788,23 +788,14 @@ async def print_documents(
         customMemo: Optional[str] = None,
         db: AsyncSession = Depends(get_db)
 ):
-    # 1. DB에서 데이터 가져오기 (SQLAlchemy Row 객체 리스트)
     raw_rows = await funchub.get_eventmemberlist(db, eventno)
-
-    # 2. Row 객체는 수정이 불가능하므로, 모두 딕셔너리(dict)로 변환합니다.
-    # (SQLAlchemy 1.4/2.0 방식: row._mapping 사용)
     rows = [dict(row._mapping) for row in raw_rows]
 
     if memberNo != "all":
-        # 3. 딕셔너리로 변환되었으므로 ["memberNo"]로 안전하게 접근 및 필터링 가능
         filtered_rows = [row for row in rows if str(row["memberNo"]) == str(memberNo)]
-
-        # 4. 프런트엔드에서 수정한 직책(customTitle)이 넘어왔다면 덮어쓰기
         if customMemo and filtered_rows:
             filtered_rows[0]["memberMemo"] = customMemo
-
         rows = filtered_rows
-
     return templates.TemplateResponse(
         name="templ/offdoc001.html",
         context={"request": request, "eventno": eventno, "members": rows}
@@ -935,3 +926,49 @@ async def get_gstbook_photos(event_no: int):
 
     photos.sort(key=lambda x: x["filename"])
     return JSONResponse(photos)
+
+
+@app.get("/manage_ephoto", response_class=HTMLResponse)
+async def manage_ephoto(request: Request, db: AsyncSession = Depends(get_db)):
+
+    return templates.TemplateResponse("manage/manage_ephoto.html", {"request": request})
+
+
+@app.get("/manage_gstbook", response_class=HTMLResponse)
+async def manage_gstbook(request: Request, db: AsyncSession = Depends(get_db)):
+
+    return templates.TemplateResponse("manage/manage_gstbook.html", {"request": request})
+
+
+@app.get("/api/ephoto/events")
+async def get_ephoto_events(db: AsyncSession = Depends(get_db)):
+    photo_dir = Path("static/img/event_photos")
+    if not photo_dir.exists():
+        return JSONResponse([])
+    event_nos = set()
+    for file in photo_dir.iterdir():
+        if file.is_file() and "-" in file.name:
+            try:
+                event_no = int(file.name.split("-")[0])
+                event_nos.add(event_no)
+            except ValueError:
+                continue
+    if not event_nos:
+        return JSONResponse([])
+    query = text("""
+                 SELECT a.eventNo, a.eventFrom, a.eventTitle
+                 FROM chyEvent a WHERE a.eventNo IN :event_nos
+                 ORDER BY a.eventFrom DESC
+                 """)
+    result = await db.execute(query, {"event_nos": tuple(event_nos)})
+    rows = result.fetchall()
+    events = []
+    for row in rows:
+        dt = row[1]
+        dt_str = dt.strftime("%Y-%m-%d %H:%M") if hasattr(dt, "strftime") else str(dt)
+        name = row[2] or "알 수 없음"
+        events.append({
+            "eventNo": row[0],
+            "label": f"[{dt_str}] {name} (행사번호: {row[0]})"
+        })
+    return JSONResponse(events)
