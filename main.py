@@ -843,7 +843,7 @@ async def contactus(request: Request):
 async def get_reserv(db: AsyncSession = Depends(get_db)):
     try:
         rows = await funchub.get_apireserv(db)
-        result = [{"reservNo": row[0], "reservFrom": row[2], "visitCnt": '', "reservMemo": row[1], "visitorName": '', "status": ''} for row in rows]
+        result = [{"reservNo": 'row[0]', "reservFrom": row[2], "visitCnt": '', "reservMemo": row[1], "visitorName": '', "status": ''} for row in rows]
     except Exception as e:
         result = []
     finally:
