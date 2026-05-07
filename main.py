@@ -28,6 +28,7 @@ from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_passwor
 from typing import Optional
 import phapp
 from routers import board
+import shutil
 
 dotenv.load_dotenv()
 
@@ -63,7 +64,14 @@ app.include_router(board.router)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/thumbnails", StaticFiles(directory="static/img/members/"), name="thumbnails")
-
+PHOTO_DIR = Path("./static/img/event_photos")
+GSTB_DIR = Path("./static/img/gstbook")
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+EXT_BY_CONTENT_TYPE = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
 security = HTTPBearer()
 
 
@@ -848,3 +856,82 @@ async def get_reserv(db: AsyncSession = Depends(get_db)):
         result = []
     finally:
         return {"reservs": result}
+
+@app.post("/api/eventphotoupload/{eventNo}")
+async def upload_event_photo(eventNo: int, photo: UploadFile = File(...)):
+    if photo.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=415, detail=f"Unsupported content type: {photo.content_type}")
+    ext = EXT_BY_CONTENT_TYPE.get(photo.content_type, "")
+    if not ext:
+        raise HTTPException(status_code=415, detail="Unsupported content type (no extension mapping)")
+    idx = 1
+    while True:
+        filename = f"{eventNo}-{idx}{ext}"
+        save_path = PHOTO_DIR / filename
+        if not save_path.exists():
+            break
+        idx += 1
+    try:
+        with save_path.open("wb") as buffer:
+            shutil.copyfileobj(photo.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
+    url_path = f"/static/img/event_photos/{filename}"
+    return {"eventNo": eventNo, "filename": filename, "contentType": photo.content_type, "savedPath": str(save_path), "url": url_path}
+
+
+@app.post("/api/guestbookupload/{gdate}/{eventNo}")
+async def upload_guestbook(eventNo: int,gdate:str, photo: UploadFile = File(...)):
+    if photo.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=415, detail=f"Unsupported content type: {photo.content_type}")
+    ext = EXT_BY_CONTENT_TYPE.get(photo.content_type, "")
+    if not ext:
+        raise HTTPException(status_code=415, detail="Unsupported content type (no extension mapping)")
+    idx = 1
+    while True:
+        filename = f"gstb-{gdate}-{eventNo}-{idx}{ext}"
+        save_path = GSTB_DIR / filename
+        if not save_path.exists():
+            break
+        idx += 1
+    try:
+        with save_path.open("wb") as buffer:
+            shutil.copyfileobj(photo.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
+    url_path = f"/static/img/gstbook/{filename}"
+    return {"eventNo": eventNo, "filename": filename, "contentType": photo.content_type, "savedPath": str(save_path), "url": url_path}
+
+
+@app.get("/api/ephoto/photos/{event_no}")
+async def get_ephoto_photos(event_no: int):
+    photo_dir = Path("static/img/event_photos")
+    if not photo_dir.exists():
+        return JSONResponse([])
+    photos = []
+    for file in photo_dir.glob(f"{event_no}-*.*"):
+        if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+            photos.append({
+                "filename": file.name,
+                "url": f"/static/img/event_photos/{file.name}"
+            })
+    photos.sort(key=lambda x: x["filename"])
+    return JSONResponse(photos)
+
+
+@app.get("/api/gstbook/photos/{event_no}")
+async def get_gstbook_photos(event_no: int):
+    gstbook_dir = Path("static/img/gstbook")
+    if not gstbook_dir.exists():
+        return JSONResponse([])
+
+    photos = []
+    for file in gstbook_dir.glob(f"gstb-*-{event_no}-*.*"):
+        if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+            photos.append({
+                "filename": file.name,
+                "url": f"/static/img/gstbook/{file.name}"
+            })
+
+    photos.sort(key=lambda x: x["filename"])
+    return JSONResponse(photos)
