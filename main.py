@@ -881,7 +881,6 @@ async def get_gstbook_photos(event_no: int):
     gstbook_dir = Path("static/img/gstbook")
     if not gstbook_dir.exists():
         return JSONResponse([])
-
     photos = []
     for file in gstbook_dir.glob(f"gstb-*-{event_no}-*.*"):
         if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
@@ -889,7 +888,6 @@ async def get_gstbook_photos(event_no: int):
                 "filename": file.name,
                 "url": f"/static/img/gstbook/{file.name}"
             })
-
     photos.sort(key=lambda x: x["filename"])
     return JSONResponse(photos)
 

@@ -83,13 +83,8 @@
                             </select>
                         </div>
                     </div>
-
-                    <!-- 하단: 사진 타일 그리드 -->
                     <div id="photoGrid" class="row">
-                        <!-- 사진 카드가 여기에 동적으로 추가됩니다 -->
                     </div>
-
-                    <!-- 사진이 없을 때 표시할 안내 문구 -->
                     <div id="emptyState" class="text-center text-muted my-5" style="display: none;">
                         <h4 class="font-weight-bold mt-4">등록된 사진이 없습니다.</h4>
                     </div>
@@ -204,9 +199,7 @@
                 emptyState.style.display = 'none';
                 photos.forEach(photo => {
                     const col = document.createElement('div');
-                    // Bootstrap 4 그리드 시스템 적용
                     col.className = 'col-sm-6 col-md-4 col-lg-3 mb-4';
-                    // 이미지 태그에 onclick 이벤트 추가
                     col.innerHTML = `
                         <div class="card h-100 shadow-sm photo-card" id="card-${photo.filename}">
                             <div class="photo-img-wrapper">
@@ -237,15 +230,11 @@
         }
     }
 
-    // [추가됨] 이미지 크게 보기 함수
     function showImageModal(url) {
-        // 모달 안의 img 태그 src를 클릭한 이미지의 url로 변경
         document.getElementById('modalImage').src = url;
-        // jQuery를 이용하여 Bootstrap 모달 띄우기 (SB Admin 2 기본 내장)
         $('#imageModal').modal('show');
     }
 
-    // 강제 다운로드 함수
     async function downloadPhoto(url, filename) {
         try {
             const response = await fetch(url);
@@ -265,7 +254,6 @@
         }
     }
 
-    // API: 사진 90도 회전
     async function rotatePhoto(filename) {
         try {
             const response = await fetch(`/api/ephoto/photos/${filename}/rotate`, { method: 'POST' });
@@ -287,7 +275,6 @@
         }
     }
 
-    // API: 사진 삭제
     async function deletePhoto(filename) {
         if (!confirm("정말로 이 사진을 삭제하시겠습니까? (복구할 수 없습니다)")) return;
 
