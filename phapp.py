@@ -199,19 +199,35 @@ async def add_eventmember(
                            SELECT 1
                            FROM chyEventmember
                            WHERE eventNo = :eventno
-                             AND memberNo = :memberno and attrib = '1000010000'
+                             AND memberNo = :memberno
+                             and attrib = '1000010000'
                            """)
         result = await db.execute(check_query, {"eventno": eventno, "memberno": memberno})
         exists = result.scalar()
-
         if exists:
             return {"result": "already_exists", "message": "이미 참석 등록된 회원입니다."}
+        member_info_query = text("""
+                                 SELECT classNo, classRank, memberMemo
+                                 FROM chyClassmember
+                                 WHERE memberNo = :memberno
+                                 """)
+        info_result = await db.execute(member_info_query, {"memberno": memberno})
+        row = info_result.fetchone()
+        class_no = row[0] if row else None
+        class_rank = row[1] if row else None
+        member_memo = row[2] if row else None
 
         insert_query = text("""
-                            INSERT INTO chyEventmember (eventNo, memberNo)
-                            VALUES (:eventno, :memberno)
+                            INSERT INTO chyEventmember (eventNo, memberNo, classNo, classRank, memberMemo)
+                            VALUES (:eventno, :memberno, :class_no, :class_rank, :member_memo)
                             """)
-        await db.execute(insert_query, {"eventno": eventno, "memberno": memberno})
+        await db.execute(insert_query, {
+            "eventno": eventno,
+            "memberno": memberno,
+            "class_no": class_no,
+            "class_rank": class_rank,
+            "member_memo": member_memo
+        })
         await db.commit()
         return {"result": "ok", "message": "참석 등록이 완료되었습니다."}
     except Exception as e:
