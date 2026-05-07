@@ -648,40 +648,6 @@ async def insert_prize_detail(request: Request, memberno: int, db: AsyncSession 
     except Exception as e:
         return JSONResponse({"ok": False, "message": str(e)}, status_code=500)
 
-@app.get("/api/ephoto/events")
-async def get_ephoto_events(db: AsyncSession = Depends(get_db)):
-    photo_dir = Path("static/img/event")
-    if not photo_dir.exists():
-        return JSONResponse([])
-    event_nos = set()
-    for file in photo_dir.iterdir():
-        if file.is_file() and "-" in file.name:
-            try:
-                event_no = int(file.name.split("-")[0])
-                event_nos.add(event_no)
-            except ValueError:
-                continue
-    if not event_nos:
-        return JSONResponse([])
-    query = text("""
-                 SELECT a.eventNo, eventFrom , a.eventTitle ,a.eventPlace
-                 FROM chyEvent a
-                 WHERE a.eventNo IN :event_nos
-                 ORDER BY a.eventFrom DESC
-                 """)
-    result = await db.execute(query, {"event_nos": tuple(event_nos)})
-    rows = result.fetchall()
-    events = []
-    for row in rows:
-        dt = row[1]
-        dt_str = dt.strftime("%Y-%m-%d") if hasattr(dt, "strftime") else str(dt)
-        name = row[2] or "알 수 없음"
-        events.append({
-            "eventNo": row[0],
-            "label": f"[{dt_str}] {name} (행사번호: {row[0]}), (행사장소: {row[3]})",
-        })
-    return JSONResponse(events)
-
 
 @app.get("/photo_album", response_class=HTMLResponse)
 async def photoalbum(request: Request,db: AsyncSession = Depends(get_db)):
@@ -697,7 +663,7 @@ async def photoupload(request: Request,db: AsyncSession = Depends(get_db)):
 
 @app.get("/api/ephoto/photos/{event_no}")
 async def get_ephoto_photos(event_no: int):
-    photo_dir = Path("static/img/event")
+    photo_dir = Path("static/img/event_photos")
     if not photo_dir.exists():
         return JSONResponse([])
 
@@ -706,7 +672,7 @@ async def get_ephoto_photos(event_no: int):
         if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
             photos.append({
                 "filename": file.name,
-                "url": f"/static/img/event/{file.name}"
+                "url": f"/static/img/event_photos/{file.name}"
             })
     photos.sort(key=lambda x: x["filename"])
     return JSONResponse(photos)
@@ -714,7 +680,7 @@ async def get_ephoto_photos(event_no: int):
 
 @app.post("/api/ephoto/photos/{filename}/rotate")
 async def rotate_ephoto(filename: str):
-    file_path = Path("static/img/event") / filename
+    file_path = Path("static/img/event_photos") / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
     try:
@@ -725,7 +691,7 @@ async def rotate_ephoto(filename: str):
         import time
         return JSONResponse({
             "success": True,
-            "url": f"/static/img/event/{filename}?t={int(time.time())}"
+            "url": f"/static/img/event_photos/{filename}?t={int(time.time())}"
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -733,7 +699,7 @@ async def rotate_ephoto(filename: str):
 
 @app.delete("/api/ephoto/photos/{filename}")
 async def delete_ephoto(filename: str):
-    file_path = Path("static/img/event") / filename
+    file_path = Path("static/img/event_photos") / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
     try:
@@ -941,7 +907,7 @@ async def manage_gstbook(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/api/ephoto/events")
-async def get_ephoto_events(db: AsyncSession = Depends(get_db)):
+async def get_ephoto_eventslist(db: AsyncSession = Depends(get_db)):
     photo_dir = Path("static/img/event_photos")
     if not photo_dir.exists():
         return JSONResponse([])
@@ -955,12 +921,16 @@ async def get_ephoto_events(db: AsyncSession = Depends(get_db)):
                 continue
     if not event_nos:
         return JSONResponse([])
-    query = text("""
+
+    in_clause = ", ".join(str(n) for n in event_nos)
+
+    query = text(f"""
                  SELECT a.eventNo, a.eventFrom, a.eventTitle
-                 FROM chyEvent a WHERE a.eventNo IN :event_nos
+                 FROM chyEvent a 
+                 WHERE a.eventNo IN ({in_clause})
                  ORDER BY a.eventFrom DESC
                  """)
-    result = await db.execute(query, {"event_nos": tuple(event_nos)})
+    result = await db.execute(query)
     rows = result.fetchall()
     events = []
     for row in rows:

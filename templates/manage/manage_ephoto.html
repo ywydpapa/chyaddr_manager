@@ -136,12 +136,15 @@
         loadEvents();
     });
 
-    async function loadEvents() {
+        async function loadEvents() {
         try {
             const response = await fetch('/api/ephoto/events');
             const events = await response.json();
-            console.log("목록 불러오기");
-            console.log(events);
+            console.log("목록 불러오기 응답 데이터:", events);
+            if (!Array.isArray(events)) {
+                console.error("배열 형식이 아닙니다. 백엔드 에러를 확인하세요:", events);
+                return;
+            }
             const select = document.getElementById('eventSelect');
             events.forEach(ev => {
                 const option = document.createElement('option');
@@ -155,21 +158,22 @@
         }
     }
 
+
     // API: 선택한 이벤트의 사진 로드
     async function loadPhotos() {
-        const reservNo = document.getElementById('eventSelect').value;
+        const eventNo = document.getElementById('eventSelect').value;
         const grid = document.getElementById('photoGrid');
         const emptyState = document.getElementById('emptyState');
 
         grid.innerHTML = ''; // 기존 사진 초기화
 
-        if (!reservNo) {
+        if (!eventNo) {
             emptyState.style.display = 'none';
             return;
         }
 
         try {
-            const response = await fetch(`/api/ephoto/photos/${reservNo}`);
+            const response = await fetch(`/api/ephoto/photos/${eventNo}`);
             const photos = await response.json();
 
             if (photos.length === 0) {
