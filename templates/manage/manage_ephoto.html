@@ -131,18 +131,17 @@
     <!-- Bootstrap core JavaScript-->
 {% include 'common/adscript.html' %}
 
-<!-- 사진 관리 스크립트 -->
 <script>
-    // 페이지 로드 시 이벤트 목록 불러오기
     document.addEventListener("DOMContentLoaded", function() {
         loadEvents();
     });
 
-    // API: 이벤트 목록 로드
     async function loadEvents() {
         try {
             const response = await fetch('/api/ephoto/events');
             const events = await response.json();
+            console.log("목록 불러오기");
+            console.log(events);
             const select = document.getElementById('eventSelect');
             events.forEach(ev => {
                 const option = document.createElement('option');
