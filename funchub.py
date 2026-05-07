@@ -364,3 +364,13 @@ async def get_eventmemberlist(db: AsyncSession, eventno: int):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Database query failed(EventMemberLIST)")
+
+
+async def get_apireserv(db: AsyncSession):
+    try:
+        query = text("select eventNo, eventTitle, eventFrom from chyEvent where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        event_list = result.fetchall()
+        return event_list
+    except:
+        raise HTTPException(status_code=500, detail="Database query failed(EVENT_LIST)")
