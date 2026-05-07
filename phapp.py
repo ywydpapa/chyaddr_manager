@@ -152,6 +152,15 @@ async def get_all_members(db: AsyncSession = Depends(get_db),
     return {"rankmembers": [dict(row._mapping) for row in member_list]}
 
 
+@router.get("/event_memberlist/{eventno}", summary="행사 참가자 조회")
+async def get_event_memberlist(eventno: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: str = Depends(get_current_mobile_user)
+):
+    member_list = await funchub.get_eventmemberlist(db, eventno)
+    return {"events": [dict(row._mapping) for row in member_list]}
+
+
 @router.get("/events", summary="행사 목록 조회")
 async def get_app_events(
         db: AsyncSession = Depends(get_db),
