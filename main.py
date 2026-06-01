@@ -809,10 +809,11 @@ async def get_reserv(db: AsyncSession = Depends(get_db)):
     try:
         rows = await funchub.get_apireserv(db)
         result = [{"reservNo": row[0], "reservFrom": row[2], "visitCnt": 0, "reservMemo": row[1], "visitorName": row[1], "status": '1111111111'} for row in rows]
+        return {"reservs": result}
     except Exception as e:
         result = []
-    finally:
         return {"reservs": result}
+
 
 @app.post("/api/eventphotoupload/{eventNo}")
 async def upload_event_photo(eventNo: int, photo: UploadFile = File(...)):
