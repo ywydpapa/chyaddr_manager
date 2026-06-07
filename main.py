@@ -491,6 +491,13 @@ async def eventlists(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request, "event_list": event_list})
 
 
+@app.get("/fevent_list", response_class=HTMLResponse)
+async def feventlists(request: Request, db: AsyncSession = Depends(get_db)):
+    event_list = await funchub.get_eventlist(db)
+    return templates.TemplateResponse(request=request, name="fevent/fevent_list.html", context={
+        "request": request, "event_list": event_list})
+
+
 @app.get("/class_members/{classno}", response_class=HTMLResponse)
 async def classmembers(request: Request,classno:int ,db: AsyncSession = Depends(get_db)):
     member_list = await funchub.get_memberlist(db)
