@@ -295,6 +295,34 @@ async def add_event(
     return RedirectResponse(url="/event_list", status_code=303)
 
 
+@app.get("/add_fevent", response_class=HTMLResponse)
+async def add_fevent(
+        request: Request,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        db: AsyncSession = Depends(get_db)
+):
+    if start and end:
+        start_time = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+    else:
+        now = datetime.now()
+        start_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        end_time = start_time + timedelta(hours=3)
+    query = text("""
+                 INSERT INTO chyFamilyevents (feventType, feventPlace, feventFrom, feventTo)
+                 VALUES (:etype, :eplace, :efrom, :eto)
+                 """)
+    await db.execute(query, {
+        "etype": "8",
+        "eplace": "미정",
+        "efrom": start_time,
+        "eto": end_time
+    })
+    await db.commit()
+    return RedirectResponse(url="/fevent_list", status_code=303)
+
+
 @app.get("/add_class", response_class=HTMLResponse)
 async def add_class(request: Request, db: AsyncSession = Depends(get_db)):
     query = text(
@@ -351,6 +379,18 @@ async def update_event(request: Request, eventno: int, db: AsyncSession = Depend
     await db.execute(query, data4update)
     await db.commit()
     return RedirectResponse(f"/event_Detail/{eventno}?msg=success", status_code=303)
+
+
+@app.post("/update_fevent/{feventno}", response_class=HTMLResponse)
+async def update_fevent(request: Request, feventno: int, db: AsyncSession = Depends(get_db)):
+    form_data = await request.form()
+    data4update = {
+        "feventNo": feventno, "feventType": form_data.get("feventtype"), "feventFrom": form_data.get("feventfr"),
+        "feventTo": form_data.get("feventto"),"feventPlace": form_data.get("feventplace"),"memberno": form_data.get("feventmember"), "feventmemo":form_data.get("feventmemo")}
+    query = text("UPDATE chyFamilyevents SET memberNo = :memberno, feventType = :feventType, feventFrom = :feventFrom, feventTo = :feventTo, feventPlace = :feventPlace,feventMemo = :feventmemo WHERE feventNo = :feventNo")
+    await db.execute(query, data4update)
+    await db.commit()
+    return RedirectResponse(f"/fevent_list?msg=success", status_code=303)
 
 
 @app.post("/update_category/{catno}", response_class=HTMLResponse)
@@ -493,9 +533,11 @@ async def eventlists(request: Request, db: AsyncSession = Depends(get_db)):
 
 @app.get("/fevent_list", response_class=HTMLResponse)
 async def feventlists(request: Request, db: AsyncSession = Depends(get_db)):
-    event_list = await funchub.get_eventlist(db)
+    event_list = await funchub.get_feventlist(db)
+    fevent_type = await funchub.get_categorybytype(db, "MBCNC")
+    fevent_members = await funchub.get_memberlist(db)
     return templates.TemplateResponse(request=request, name="fevent/fevent_list.html", context={
-        "request": request, "event_list": event_list})
+        "request": request, "event_list": event_list, "fevent_type": fevent_type, "fevent_members": fevent_members})
 
 
 @app.get("/class_members/{classno}", response_class=HTMLResponse)

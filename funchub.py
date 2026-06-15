@@ -195,6 +195,15 @@ async def get_eventlist(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(CLASS_LIST)")
 
 
+async def get_feventlist(db: AsyncSession):
+    try:
+        query = text("SELECT a.* FROM chyFamilyevents a where a.attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        return result.fetchall()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Database query failed(Fevent_LIST)")
+
+
 async def get_companylist(db: AsyncSession):
     try:
         query = text("SELECT a.* FROM chyCompany a where a.attrib not like :attpatt")
