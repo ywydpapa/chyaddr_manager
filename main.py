@@ -1007,3 +1007,53 @@ async def birthday_list(request: Request, db: AsyncSession = Depends(get_db)):
         name="fevent/birthday_list.html",  # 템플릿 경로에 맞게 수정하세요
         context={"request": request, "birthday_list": birthdays}
     )
+
+
+@app.post("/send_birthday_message", response_class=HTMLResponse)
+async def send_birthday_message(
+        request: Request,
+        selected_members: str = Form(...),
+        db: AsyncSession = Depends(get_db)
+):
+    if not selected_members:
+        return HTMLResponse("선택된 회원이 없습니다.")
+
+    # 쉼표로 구분된 문자열을 정수 리스트로 변환
+    member_ids = [int(x.strip()) for x in selected_members.split(',') if x.strip().isdigit()]
+
+    if not member_ids:
+        return HTMLResponse("유효한 회원 ID가 없습니다.")
+
+    # IN 절에 들어갈 문자열 생성
+    in_clause = ", ".join(str(id) for id in member_ids)
+
+    # 회원 정보와 대표 직책(가장 첫 번째 기수의 직책)을 가져오는 쿼리
+    query = text(f"""
+        SELECT m.memberNo, m.memberName, m.memberMemo, 
+               (SELECT r.rankTitlekor 
+                FROM chyClassmember cm 
+                JOIN chyRank r ON cm.classRank = r.rankNo 
+                WHERE cm.memberNo = m.memberNo LIMIT 1) as rankTitlekor,
+                mi.infoContents as memberJobtitle
+        FROM chyMember m
+        LEFT JOIN chyMemberInfo mi ON mi.memberNo = m.memberNo and mi.catNo = 11 and mi.attrib not like '%XXX%' 
+        WHERE m.memberNo IN ({in_clause})
+    """)
+
+    result = await db.execute(query)
+    rows = result.fetchall()
+
+    members = []
+    for row in rows:
+        members.append({
+            "memberNo": row.memberNo,
+            "memberName": row.memberName,
+            "memberMemo": row.memberMemo,
+            "memberJobtitle": row.memberJobtitle,
+            "rankTitlekor": row.rankTitlekor or "원우"  # 직책이 없으면 '원우'로 기본값 설정
+        })
+
+    return templates.TemplateResponse(
+        name="fevent/birthday_message_print.html",
+        context={"request": request, "members": members}
+    )
