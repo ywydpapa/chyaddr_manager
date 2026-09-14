@@ -113,7 +113,7 @@ async def get_app_members(
     return {"members": [dict(row._mapping) for row in member_list]}
 
 
-@router.get("/memberdtl/{memberno}", summary="회원 목록 조회")
+@router.get("/memberdtl/{memberno}", summary="회원 상세 조회")
 async def get_app_memberdtl(memberno: int,
         db: AsyncSession = Depends(get_db),
         current_user: str = Depends(get_current_mobile_user)

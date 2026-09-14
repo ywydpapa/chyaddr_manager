@@ -1,12 +1,12 @@
 import os
 import io
-import datetime
+from datetime import datetime, date
 import asyncio
 import hashlib
 import hmac
 import secrets
 from pathlib import Path
-
+from korean_lunar_calendar import KoreanLunarCalendar
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from firebase_admin import messaging
 from passlib.exc import UnknownHashError
 import jwt
 import dotenv
+import re
 
 dotenv.load_dotenv()
 
@@ -383,3 +384,81 @@ async def get_apireserv(db: AsyncSession):
         return event_list
     except:
         raise HTTPException(status_code=500, detail="Database query failed(EVENT_LIST)")
+
+
+async def get_upcoming_birthdays(db: AsyncSession, start_date_str: str, end_date_str: str):
+    """
+    :param db: AsyncSession 객체
+    :param start_date_str: 검색 시작일 (YYYY-MM-DD)
+    :param end_date_str: 검색 종료일 (YYYY-MM-DD)
+    :return: 생일자 딕셔너리 리스트
+    """
+    try:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+    target_year = start_date.year
+    calendar = KoreanLunarCalendar()
+    upcoming_birthdays = []
+    try:
+        # catNo=6 (생년월일) 데이터 조회
+        query = text(
+            """
+            SELECT m.memberNo, m.memberName, i.infoContents
+            FROM chyMember m
+                     JOIN chyMemberInfo i ON m.memberNo = i.memberNo
+            WHERE i.catNo = 6
+              AND (i.attrib IS NULL OR i.attrib NOT LIKE '%XXX%')
+              AND (m.attrib IS NULL OR m.attrib NOT LIKE '%XXX%')
+            """
+        )
+        result = await db.execute(query)
+        rows = result.fetchall()
+
+        for row in rows:
+            member_no = row.memberNo
+            member_name = row.memberName
+            birth_info = row.infoContents.strip()
+
+            # 정규식: '1963-01-10 (+)' 형태 파싱
+            match = re.match(r"(\d{4})-(\d{2})-(\d{2})\s*\(([\+\-])\)", birth_info)
+            if not match:
+                continue
+
+            _, birth_month, birth_day, is_solar = match.groups()
+            birth_month = int(birth_month)
+            birth_day = int(birth_day)
+
+            this_year_birthday = None
+
+            if is_solar == '+':
+                # 양력 생일
+                try:
+                    this_year_birthday = date(target_year, birth_month, birth_day)
+                except ValueError:
+                    # 윤달 2월 29일 생일자가 평년일 경우 3월 1일로 처리
+                    this_year_birthday = date(target_year, 3, 1)
+            else:
+                # 음력 생일: 올해 양력 날짜로 변환
+                is_valid = calendar.setLunarDate(target_year, birth_month, birth_day, False)
+                if is_valid:
+                    this_year_birthday = date(calendar.solarYear, calendar.solarMonth, calendar.solarDay)
+
+            # 검색 기간 내 포함 여부 확인
+            if this_year_birthday and start_date <= this_year_birthday <= end_date:
+                upcoming_birthdays.append({
+                    "memberNo": member_no,
+                    "memberName": member_name,
+                    "originalBirth": birth_info,
+                    "thisYearBirthday": this_year_birthday.isoformat(),
+                    "birthType": "양력" if is_solar == '+' else "음력"
+                })
+
+        # 날짜순 정렬
+        upcoming_birthdays.sort(key=lambda x: x["thisYearBirthday"])
+        return upcoming_birthdays
+
+    except Exception as e:
+        print(f"Error in get_upcoming_birthdays: {e}")
+        raise HTTPException(status_code=500, detail="Database query failed(UPCOMING_BIRTHDAYS)")

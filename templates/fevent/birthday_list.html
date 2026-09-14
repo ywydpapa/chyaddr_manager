@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>충효예대학 원우관리 - 생일자 관리</title>
+
+    <!-- Custom fonts and styles -->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <!-- FullCalendar CDN -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+    <style>
+        .fc-event { cursor: pointer; }
+        .fc-event-title { font-weight: bold; }
+        .fc-day-today { background-color: #fff3cd !important; }
+
+        /* 달력 내 체크박스 스타일 */
+        .fc-event-checkbox {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .fc-event-main {
+            display: flex;
+            align-items: center;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            {% include 'common/topbar.html' %}
+
+            <div class="container-fluid">
+                <div style="display: flex; align-items: center; justify-content: space-between;" class="mb-4">
+                    <h4 class="h3 mb-0 text-gray-800">생일자 관리 (올해)</h4>
+                    <!-- 일괄 메시지 발송 버튼 -->
+                    <button class="btn btn-primary" id="btnSendMessage" role="button" style="flex: 0 0 auto;">
+                        <i class="fas fa-envelope fa-sm text-white-50"></i> 일괄 축하 메시지 발송
+                    </button>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">생일자 목록</h6>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="viewToggle" checked>
+                            <label class="custom-control-label" for="viewToggle">달력 보기</label>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- 리스트 뷰 (기본 숨김) -->
+                        <div id="listView" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="birthdayListTable" width="100%" cellspacing="0">
+                                    <thead class="bg-light" style="text-align: center">
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <input type="checkbox" id="selectAllList">
+                                        </th>
+                                        <th>올해 생일</th>
+                                        <th>회원명</th>
+                                        <th>원래 생일</th>
+                                        <th>양/음력</th>
+                                        <th>상세보기</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for b in birthday_list %}
+                                    <tr style="text-align: center">
+                                        <td style="vertical-align: middle;">
+                                            <input type="checkbox" class="member-checkbox" value="{{ b.memberNo }}" data-name="{{ b.memberName }}">
+                                        </td>
+                                        <td style="vertical-align: middle; font-weight: bold; color: #4e73df;">{{ b.thisYearBirthday }}</td>
+                                        <td style="vertical-align: middle;">{{ b.memberName }}</td>
+                                        <td style="vertical-align: middle;">{{ b.originalBirth }}</td>
+                                        <td style="vertical-align: middle;">
+                                            {% if b.birthType == '양력' %}
+                                                <span class="badge badge-primary">양력</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">음력</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="vertical-align: middle;">
+                                            <a href="/memberDetail/{{ b.memberNo }}" class="btn btn-sm btn-info">상세정보</a>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">등록된 생일자가 없습니다.</td>
+                                    </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 달력 뷰 (기본 표시) -->
+                        <div id="calendarView" style="display: block;">
+                            <div id="calendar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'common/footer.html' %}
+    </div>
+</div>
+
+<!-- 숨겨진 폼: 선택된 회원들에게 메시지를 보내기 위해 백엔드로 전송 -->
+<form id="sendMessageForm" method="POST" action="/send_birthday_message" style="display: none;">
+    <input type="hidden" name="selected_members" id="selectedMembersInput">
+</form>
+
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+{% include 'common/adscript.html' %}
+
+<script>
+    var calendar;
+    // 선택된 회원 번호를 저장하는 Set (달력과 리스트 뷰 동기화용)
+    var selectedMembers = new Set();
+
+    var allEvents = [
+        {% for b in birthday_list %}
+        {
+            id: '{{ b.memberNo }}',
+            title: '{{ b.memberName }}',
+            start: '{{ b.thisYearBirthday }}',
+            allDay: true,
+            extendedProps: {
+                memberUrl: '/memberDetail/{{ b.memberNo }}',
+                originalBirth: '{{ b.originalBirth }}',
+                birthType: '{{ b.birthType }}'
+            },
+            backgroundColor: '{% if b.birthType == "양력" %}#4e73df{% else %}#f6c23e{% endif %}',
+            borderColor: '{% if b.birthType == "양력" %}#4e73df{% else %}#f6c23e{% endif %}',
+            textColor: '#ffffff'
+        },
+        {% endfor %}
+    ];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek'
+            },
+            events: allEvents,
+
+            // 이벤트 렌더링 커스터마이징: 체크박스 추가
+            eventContent: function(arg) {
+                var memberNo = arg.event.id;
+                var isChecked = selectedMembers.has(memberNo) ? 'checked' : '';
+
+                var html = `
+                    <div class="fc-event-main">
+                        <input type="checkbox" class="fc-event-checkbox" data-id="${memberNo}" ${isChecked}
+                               onclick="event.stopPropagation(); toggleMemberSelection('${memberNo}', this.checked);">
+                        <span>🎂 ${arg.event.title}</span>
+                    </div>
+                `;
+                return { html: html };
+            },
+
+            // 이벤트 영역 클릭 시 상세 페이지 이동 (체크박스 클릭은 위에서 stopPropagation으로 막음)
+            eventClick: function (info) {
+                var memberName = info.event.title;
+                var birthType = info.event.extendedProps.birthType;
+                var origBirth = info.event.extendedProps.originalBirth;
+                var url = info.event.extendedProps.memberUrl;
+
+                if (confirm(memberName + "님의 상세 정보 페이지로 이동하시겠습니까?\n(원래 생일: " + origBirth + " [" + birthType + "])")) {
+                    window.location.href = url;
+                }
+            }
+        });
+
+        calendar.render();
+
+        // 뷰 토글 로직
+        var savedView = sessionStorage.getItem('birthdayViewMode');
+        var viewToggle = document.getElementById('viewToggle');
+
+        if (savedView === 'list') {
+            viewToggle.checked = false;
+            document.getElementById('listView').style.display = 'block';
+            document.getElementById('calendarView').style.display = 'none';
+        }
+
+        viewToggle.addEventListener('change', function () {
+            if (this.checked) {
+                document.getElementById('listView').style.display = 'none';
+                document.getElementById('calendarView').style.display = 'block';
+                calendar.render();
+                sessionStorage.setItem('birthdayViewMode', 'calendar');
+            } else {
+                document.getElementById('listView').style.display = 'block';
+                document.getElementById('calendarView').style.display = 'none';
+                syncListCheckboxes(); // 리스트 뷰로 전환 시 체크박스 상태 동기화
+                sessionStorage.setItem('birthdayViewMode', 'list');
+            }
+        });
+
+        // 리스트 뷰 전체 선택 체크박스
+        document.getElementById('selectAllList').addEventListener('change', function() {
+            var isChecked = this.checked;
+            var checkboxes = document.querySelectorAll('.member-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = isChecked;
+                if (isChecked) {
+                    selectedMembers.add(cb.value);
+                } else {
+                    selectedMembers.delete(cb.value);
+                }
+            });
+            // 달력이 렌더링된 상태라면 달력의 체크박스도 업데이트
+            calendar.render();
+        });
+
+        // 리스트 뷰 개별 체크박스 이벤트
+        var listCheckboxes = document.querySelectorAll('.member-checkbox');
+        listCheckboxes.forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                toggleMemberSelection(this.value, this.checked);
+            });
+        });
+
+        // 일괄 메시지 발송 버튼 클릭 이벤트
+        document.getElementById('btnSendMessage').addEventListener('click', function() {
+            if (selectedMembers.size === 0) {
+                alert("메시지를 발송할 회원을 선택해주세요.");
+                return;
+            }
+
+            if (confirm(selectedMembers.size + "명의 회원에게 생일 축하 메시지를 발송하시겠습니까?")) {
+                // Set을 배열로 변환 후 쉼표로 구분된 문자열로 폼에 저장
+                document.getElementById('selectedMembersInput').value = Array.from(selectedMembers).join(',');
+                document.getElementById('sendMessageForm').submit();
+            }
+        });
+    });
+
+    // 선택 상태 토글 및 동기화 함수
+    window.toggleMemberSelection = function(memberNo, isChecked) {
+        if (isChecked) {
+            selectedMembers.add(memberNo);
+        } else {
+            selectedMembers.delete(memberNo);
+        }
+        syncListCheckboxes();
+    };
+
+    // 리스트 뷰의 체크박스 상태를 selectedMembers Set과 동기화
+    function syncListCheckboxes() {
+        var checkboxes = document.querySelectorAll('.member-checkbox');
+        var allChecked = true;
+        var hasItems = checkboxes.length > 0;
+
+        checkboxes.forEach(function(cb) {
+            var shouldBeChecked = selectedMembers.has(cb.value);
+            cb.checked = shouldBeChecked;
+            if (!shouldBeChecked) allChecked = false;
+        });
+
+        document.getElementById('selectAllList').checked = (hasItems && allChecked);
+    }
+</script>
+</body>
+</html>

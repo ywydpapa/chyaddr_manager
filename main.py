@@ -22,7 +22,7 @@ from sqlalchemy.orm import sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 import dotenv
 from starlette.responses import JSONResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import funchub
 from funchub import ALGORITHM, JWT_SECRET_KEY, get_password_hash, verify_password, get_current_user
 from typing import Optional
@@ -990,3 +990,20 @@ async def get_ephoto_eventslist(db: AsyncSession = Depends(get_db)):
             "label": f"[{dt_str}] {name} (행사번호: {row[0]})"
         })
     return JSONResponse(events)
+
+
+@app.get("/birthday_list", response_class=HTMLResponse)
+async def birthday_list(request: Request, db: AsyncSession = Depends(get_db)):
+    current_year = date.today().year
+    start_date = f"{current_year}-01-01"
+    end_date = f"{current_year}-12-31"
+    try:
+        birthdays = await funchub.get_upcoming_birthdays(db, start_date, end_date)
+    except Exception as e:
+        print(f"생일자 목록 조회 오류: {e}")
+        birthdays = []
+
+    return templates.TemplateResponse(
+        name="fevent/birthday_list.html",  # 템플릿 경로에 맞게 수정하세요
+        context={"request": request, "birthday_list": birthdays}
+    )
