@@ -132,7 +132,6 @@
 
 <script>
     var calendar;
-    // 선택된 회원 번호를 저장하는 Set (달력과 리스트 뷰 동기화용)
     var selectedMembers = new Set();
 
     var allEvents = [
@@ -155,6 +154,9 @@
     ];
 
     document.addEventListener("DOMContentLoaded", function () {
+        // 현재 연도 구하기
+        var currentYear = new Date().getFullYear();
+
         var calendarEl = document.getElementById('calendar');
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -164,9 +166,13 @@
                 center: 'title',
                 right: 'dayGridMonth,dayGridWeek'
             },
+            // ★ 달력 이동 범위를 올해로 제한
+            validRange: {
+                start: currentYear + '-01-01',
+                end: (currentYear + 1) + '-01-01'
+            },
             events: allEvents,
 
-            // 이벤트 렌더링 커스터마이징: 체크박스 추가
             eventContent: function(arg) {
                 var memberNo = arg.event.id;
                 var isChecked = selectedMembers.has(memberNo) ? 'checked' : '';
@@ -181,7 +187,6 @@
                 return { html: html };
             },
 
-            // 이벤트 영역 클릭 시 상세 페이지 이동 (체크박스 클릭은 위에서 stopPropagation으로 막음)
             eventClick: function (info) {
                 var memberName = info.event.title;
                 var birthType = info.event.extendedProps.birthType;
@@ -215,7 +220,7 @@
             } else {
                 document.getElementById('listView').style.display = 'block';
                 document.getElementById('calendarView').style.display = 'none';
-                syncListCheckboxes(); // 리스트 뷰로 전환 시 체크박스 상태 동기화
+                syncListCheckboxes();
                 sessionStorage.setItem('birthdayViewMode', 'list');
             }
         });
@@ -232,7 +237,6 @@
                     selectedMembers.delete(cb.value);
                 }
             });
-            // 달력이 렌더링된 상태라면 달력의 체크박스도 업데이트
             calendar.render();
         });
 
@@ -244,7 +248,7 @@
             });
         });
 
-        // 일괄 메시지 발송 버튼 클릭 이벤트
+        // 일괄 메시지 발송 버튼
         document.getElementById('btnSendMessage').addEventListener('click', function() {
             if (selectedMembers.size === 0) {
                 alert("메시지를 발송할 회원을 선택해주세요.");
@@ -252,7 +256,6 @@
             }
 
             if (confirm(selectedMembers.size + "명의 회원에게 생일 축하 메시지를 발송하시겠습니까?")) {
-                // Set을 배열로 변환 후 쉼표로 구분된 문자열로 폼에 저장
                 document.getElementById('selectedMembersInput').value = Array.from(selectedMembers).join(',');
                 document.getElementById('sendMessageForm').submit();
             }
@@ -269,7 +272,6 @@
         syncListCheckboxes();
     };
 
-    // 리스트 뷰의 체크박스 상태를 selectedMembers Set과 동기화
     function syncListCheckboxes() {
         var checkboxes = document.querySelectorAll('.member-checkbox');
         var allChecked = true;
