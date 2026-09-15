@@ -47,13 +47,66 @@
 
     /* A4 페이지 기본 스타일 (캡처되는 영역) */
     .a4-page { width: 210mm; height: 297mm; padding: 25mm 20mm; background-color: white; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-    .border-box { border: 3px double #d4af37; padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
-    .recipient { font-size: 26pt; font-weight: bold; text-align: left; margin-top: 30px; line-height: 1.5; }
-    .recipient .name { font-size: 30pt; }
+        /* 배경 워터마크 로고 추가 */
+    .watermark-logo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 400px; /* 로고 크기 (필요에 따라 조절하세요) */
+        opacity: 0.1; /* 흐릿한 정도 (0.1 ~ 0.2 정도가 적당합니다) */
+        z-index: 1;   /* 배경으로 배치 */
+        pointer-events: none; /* 마우스 클릭 방해 방지 */
+    }
+
+    /* 기존 border-box에 z-index 추가하여 텍스트가 로고 위로 오게 함 */
+    .border-box {
+        border: 3px double #d4af37;
+        padding: 40px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+        position: relative; /* 추가 */
+        z-index: 2;         /* 추가 (워터마크보다 위로) */
+    }
+
     .message { font-size: 32pt; line-height: 1.8; text-align: center; word-break: keep-all; margin: 60px 0; }
+         /* 수신자 영역 (한 줄 고정 및 정렬) */
+    .recipient {
+        font-size: 26pt;
+        font-weight: bold;
+        text-align: left;
+        margin-top: 30px;
+        line-height: 1.5;
+        white-space: nowrap; /* 줄바꿈 방지 (필수) */
+        display: flex;
+        align-items: baseline;
+    }
+    .recipient .name {
+        font-size: 30pt;
+        margin-right: 10px; /* 이름과 직함 사이 띄어쓰기 간격 */
+    }
+    /* 발신자 영역 */
+        /* 발신자 영역 */
     .sender-area { text-align: right; margin-bottom: 30px; position: relative; }
-    .sender-text { font-size: 28pt; font-weight: bold; letter-spacing: 2px; position: relative; display: inline-block; padding-right: 20px; }
-    .main-stamp-img { position: absolute; right: -60px; top: 50%; transform: translateY(-50%); width: 90px; height: 90px; mix-blend-mode: multiply; pointer-events: none; }
+    .sender-text {
+        letter-spacing: 2px;
+        position: relative;
+        display: inline-block;
+        padding-right: 20px;
+        text-align: right;
+    }
+    .sender-title {
+        font-size: 20pt; /* 직함 글씨 크기 유지 */
+        font-weight: bold;
+        margin-right: 15px; /* 이름과 띄어쓰기 간격 */
+    }
+    .sender-name {
+        font-size: 30pt; /* 이름 글씨 크기 유지 */
+        font-weight: bold; /* 이름 굵기 유지 */
+    }
 </style>
 </head>
 <body>
@@ -80,12 +133,14 @@
         <span class="status-badge status-pending">대기 중</span>
     </div>
 
-    <!-- 실제 캡처될 A4 영역 -->
-    <div class="a4-page" data-name="{{ member.memberName }}" data-phone="{{ member.memberPhone }}">
+        <!-- 실제 캡처될 A4 영역 -->
+        <!-- 실제 캡처될 A4 영역 -->
+    <div class="a4-page" data-name="{{ member.memberName }}" data-phone="{{ member.memberPhone }}" data-jobtitle="{{ member.memberJobtitle | default(member.rankTitlekor) }}">
+        <img src="/static/img/chylogo-org.jpg" class="watermark-logo" alt="배경 로고">
         <div class="border-box">
             <div class="recipient">
                 <span class="name">{{ member.memberName }}</span>
-                {{ member.memberJobtitle | default(member.rankTitlekor) }} 님,
+                <span>{{ member.memberJobtitle | default(member.rankTitlekor) }}님,</span>
             </div>
             <div class="message">
                 생신을 진심으로 축하드립니다.<br><br>
@@ -94,8 +149,9 @@
             </div>
             <div class="sender-area">
                 <div class="sender-text">
-                    社團法人 忠孝禮 大學 理事長 柳 震 壽
-                    <img src="/static/img/stamp/mainstamp.png" alt="직인" class="main-stamp-img">
+                    <!-- 직함과 이름을 분리하여 두 줄로 표현 -->
+                    <span class="sender-title">社團法人 忠孝禮大學 理事長</span>
+                    <span class="sender-name">柳震壽</span>
                 </div>
             </div>
         </div>
@@ -104,6 +160,38 @@
 {% endfor %}
 
 <script>
+    function autoFitRecipientText() {
+        const recipients = document.querySelectorAll('.recipient');
+
+        recipients.forEach(recipient => {
+            const nameSpan = recipient.querySelector('.name');
+
+            // 부모 요소(.border-box)의 너비에서 양쪽 패딩(40px * 2 = 80px)을 뺀 최대 허용 너비
+            const maxWidth = recipient.parentElement.clientWidth - 80;
+
+            // 기본 폰트 크기 설정
+            let baseFontSize = 26;
+            let nameFontSize = 30;
+
+            // 초기화
+            recipient.style.fontSize = baseFontSize + 'pt';
+            if (nameSpan) nameSpan.style.fontSize = nameFontSize + 'pt';
+
+            // 글자 너비(scrollWidth)가 허용 너비(maxWidth)보다 크면 폰트 크기를 0.5pt씩 줄임
+            while (recipient.scrollWidth > maxWidth && baseFontSize > 10) {
+                baseFontSize -= 0.5;
+                nameFontSize -= 0.5;
+
+                recipient.style.fontSize = baseFontSize + 'pt';
+                if (nameSpan) nameSpan.style.fontSize = nameFontSize + 'pt';
+            }
+        });
+    }
+
+    // 페이지 로드가 완료되면 자동으로 글자 크기 맞춤 실행
+    window.addEventListener('load', autoFitRecipientText);
+    // --------------------------------------------------------
+
     async function convertAndSendSMS() {
         // 체크박스가 선택된 래퍼(wrapper)만 필터링
         const wrappers = Array.from(document.querySelectorAll('.page-wrapper'));
@@ -138,8 +226,9 @@
 
             const name = page.getAttribute('data-name');
             const phone = page.getAttribute('data-phone');
+            const jobtitle = page.getAttribute('data-jobtitle');
 
-            loadingText.innerText = `[${i + 1} / ${selectedWrappers.length}] ${name}님 처리 중...`;
+            loadingText.innerText = `[${i + 1} / ${selectedWrappers.length}] ${name} ${jobtitle}님 처리 중...`;
             statusBadge.className = 'status-badge status-pending';
             statusBadge.innerText = '전송 중...';
 
@@ -154,6 +243,7 @@
                 const formData = new FormData();
                 formData.append('name', name);
                 formData.append('phone', phone);
+                formData.append('jobtitle', jobtitle);
                 formData.append('image', blob, `birthday_${name}.jpg`);
 
                 // 4. 백엔드로 전송
