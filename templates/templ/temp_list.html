@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>충효예대학 원우관리 - 템플릿 관리</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+    /* 본문 컨테이너 (중앙 정렬 및 너비 제한) */
+    .info-container {
+        background-color: #ffffff;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 3rem 2.5rem;
+        border-radius: 12px;
+        color: #333;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e8dcc8;
+    }
+
+    /* 메인 타이틀 */
+    .main-title {
+        color: #5a3d2b;
+        font-weight: 700;
+        font-size: 2.2rem;
+        font-family: 'Gungsuh', '궁서', serif;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    /* 게시판 테이블 스타일 */
+    .board-table {
+        background-color: #ffffff;
+        border-top: 2px solid #5a3d2b;
+        border-bottom: 1px solid #5a3d2b;
+        margin-bottom: 0;
+    }
+    .board-table th {
+        background-color: #f5efe6;
+        color: #4a3b32;
+        font-weight: 600;
+        text-align: center;
+        padding: 1rem 0.5rem;
+        border-bottom: 1px solid #dcdcdc;
+        border-top: none;
+    }
+    .board-table td {
+        padding: 1rem 0.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e8dcc8;
+        color: #444;
+    }
+    .board-table tbody tr:hover {
+        background-color: #fcfaf8;
+    }
+
+    /* 타입 뱃지 */
+    .type-badge {
+        background-color: #8b5e34;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    .type-badge.print { background-color: #4a6b5d; }
+    .type-badge.sms { background-color: #5d4a6b; }
+    .type-badge.email { background-color: #6b5d4a; }
+
+    /* 제목 열 스타일 */
+    .title-cell {
+        text-align: left !important;
+        padding-left: 1.5rem !important;
+    }
+    .title-cell a {
+        color: #333;
+        text-decoration: none;
+        transition: color 0.2s;
+        font-weight: 500;
+    }
+    .title-cell a:hover {
+        color: #8b5e34;
+        text-decoration: underline;
+    }
+
+    /* 버튼 스타일 */
+    .btn-custom {
+        background-color: #8b5e34;
+        color: #fff;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+    .btn-custom:hover {
+        background-color: #6b4624;
+        color: #fff;
+    }
+
+    .btn-edit {
+        background-color: #fff;
+        color: #5a3d2b;
+        border: 1px solid #5a3d2b;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    .btn-edit:hover {
+        background-color: #5a3d2b;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    /* 페이지네이션 스타일 */
+    .pagination .page-link {
+        color: #5a3d2b;
+        border-color: #e8dcc8;
+        background-color: #fff;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #8b5e34;
+        border-color: #8b5e34;
+        color: #fff;
+    }
+    .pagination .page-link:hover {
+        background-color: #f5efe6;
+    }
+
+    /* 검색창 스타일 */
+    .search-box {
+        max-width: 450px;
+        margin: 0 auto;
+    }
+    .search-input {
+        border: 1px solid #d4c5b4;
+    }
+    .search-input:focus {
+        border-color: #8b5e34;
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 52, 0.25);
+    }
+    .search-btn {
+        background-color: #5a3d2b;
+        color: white;
+        border: 1px solid #5a3d2b;
+    }
+    .search-btn:hover {
+        background-color: #3d291d;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .info-container { padding: 2rem 1rem; }
+        .hide-on-mobile { display: none; }
+        .title-cell { padding-left: 0.5rem !important; }
+    }
+    </style>
+</head>
+<body id="page-top">
+<!-- Page Wrapper -->
+<div id="wrapper">
+    {% include 'common/sidebar.html' %}
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            {% include 'common/topbar.html' %}
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid py-4">
+
+                <div class="info-container">
+                    <h2 class="main-title">템플릿 관리</h2>
+
+                    <!-- 총 게시물 수 -->
+                    <div class="d-flex justify-content-between align-items-end mb-2">
+                        <div style="font-size: 0.95rem; color: #555;">
+                            총 <span style="color: #8b5e34; font-weight: bold; font-size: 1.1rem;">{{ temp_list|length }}</span>건의 템플릿이 있습니다.
+                        </div>
+                    </div>
+
+                    <!-- 게시판 테이블 -->
+                    <div class="table-responsive mb-4">
+                        <table class="table board-table text-center">
+                            <thead>
+                            <tr>
+                                <th style="width: 8%;">번호</th>
+                                <th style="width: 12%;">타입</th>
+                                <th style="width: 40%;">템플릿 제목</th>
+                                <th style="width: 15%;" class="hide-on-mobile">등록일</th>
+                                <th style="width: 13%;">관리</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- DB에서 넘어온 temp_list 리스트 반복 출력 -->
+                            {% for temp in temp_list %}
+                            <tr>
+                                <!-- 번호 (tempNo) -->
+                                <td>{{ temp.tempNo }}</td>
+
+                                <!-- 템플릿 타입 (tempType) -->
+                                <td>
+                                    {% if temp.tempType == 'PRINT' %}
+                                        <span class="type-badge print">인쇄용</span>
+                                    {% elif temp.tempType == 'SMS' %}
+                                        <span class="type-badge sms">문자용</span>
+                                    {% elif temp.tempType == 'EMAIL' %}
+                                        <span class="type-badge email">이메일용</span>
+                                    {% else %}
+                                        <span class="type-badge">{{ temp.tempType | default('기타') }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 템플릿 제목 (tempTitle) -->
+                                <td class="title-cell">
+                                    <!-- 편집 페이지 경로에 맞게 URL 수정 필요 (예: /tempEdit/{tempNo}) -->
+                                    <a href="/tempEdit/{{ temp.tempNo }}">{{ temp.tempTitle }}</a>
+                                </td>
+                                <!-- 등록일 (regDate) -->
+                                <td class="hide-on-mobile">
+                                    {{ temp.regDate.strftime('%Y.%m.%d') if temp.regDate else '-' }}
+                                </td>
+
+                                <!-- 관리 버튼 -->
+                                <td>
+                                    <a href="/tempEdit/{{ temp.tempNo }}" class="btn-edit">수정</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <!-- 데이터가 없을 경우 -->
+                            <tr>
+                                <td colspan="6" class="py-5 text-muted">등록된 템플릿이 없습니다.</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 하단 버튼 및 페이지네이션 -->
+                    <div class="d-flex justify-content-between align-items-center mb-5">
+                        <!-- 좌측 여백용 -->
+                        <div style="width: 100px;"></div>
+
+                        <!-- 페이지네이션 (백엔드 페이징 연동 필요) -->
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">이전</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">다음</a>
+                                </li>
+                            </ul>
+                        </nav>
+
+                        <!-- 템플릿 등록 버튼 -->
+                        <a href="/tempNew" style="text-decoration: none;">
+                            <button class="btn btn-custom"><i class="fas fa-plus mr-1"></i> 템플릿 등록</button>
+                        </a>
+                    </div>
+
+                    <!-- 검색창 -->
+                    <form action="/tempList" method="GET" class="search-box">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <select name="search_type" class="custom-select" style="border-color: #d4c5b4; border-radius: 4px 0 0 4px; box-shadow: none;">
+                                    <option value="title" selected>제목</option>
+                                    <option value="type">타입</option>
+                                </select>
+                            </div>
+                            <input type="text" name="keyword" class="form-control search-input" placeholder="검색어를 입력하세요">
+                            <div class="input-group-append">
+                                <button class="btn search-btn" type="submit"><i class="fas fa-search mr-1"></i> 검색</button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- End of Main Content -->
+
+        {% include 'common/footer.html' %}
+    </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Bootstrap core JavaScript-->
+{% include 'common/adscript.html' %}
+</body>
+</html>

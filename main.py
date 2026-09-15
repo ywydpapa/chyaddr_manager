@@ -89,6 +89,19 @@ class SMSMember(BaseModel):
 class SMSRequest(BaseModel):
     members: List[SMSMember]
 
+class TemplateCreate(BaseModel):
+    tempTitle: str
+    tempType: str
+    tempBg: Optional[str] = None
+    tempFr: Optional[str] = None
+    tempContents: str
+
+class TemplateUpdate(BaseModel):
+    tempTitle: str
+    tempType: str
+    tempBg: Optional[str] = None
+    tempFr: Optional[str] = None
+    tempContents: str
 
 async def get_db():
     async with async_session() as session:
@@ -1023,6 +1036,59 @@ async def birthday_list(request: Request, db: AsyncSession = Depends(get_db)):
         context={"request": request, "birthday_list": birthdays}
     )
 
+@app.get("/tempList", response_class=HTMLResponse)
+async def templist(request: Request, db: AsyncSession = Depends(get_db)):
+
+    try:
+        templists = await funchub.get_templist(db)
+    except Exception as e:
+        print(f"템플릿 목록 조회 오류: {e}")
+
+    return templates.TemplateResponse(
+        name="templ/temp_list.html",  # 템플릿 경로에 맞게 수정하세요
+        context={"request": request, "temp_list": templists}
+    )
+
+
+@app.get("/tempNew", response_class=HTMLResponse)
+async def tempnew(request: Request, db: AsyncSession = Depends(get_db)):
+
+    return templates.TemplateResponse(
+        name="templ/temp_new.html",
+        context={"request": request,}
+    )
+
+@app.get("/tempEdit/{tempno}", response_class=HTMLResponse)
+async def tempedit(request: Request, tempno:int ,db: AsyncSession = Depends(get_db)):
+
+    try:
+        template = await funchub.get_template(db, tempno)
+    except Exception as e:
+        print(f"템플릿 목록 조회 오류: {e}")
+
+    return templates.TemplateResponse(
+        name="templ/temp_edit.html",  # 템플릿 경로에 맞게 수정하세요
+        context={"request": request, "template": template}
+    )
+
+
+@app.post("/updateTemp/{tempno}")
+async def update_temp(
+        tempno: int,
+        template_data: TemplateUpdate,
+        db: AsyncSession = Depends(get_db)
+):
+    try:
+        # DB 업데이트 함수 호출
+        is_updated = await funchub.update_template(db, tempno, template_data)
+        if is_updated:
+            return {"success": True, "message": "템플릿이 성공적으로 수정되었습니다."}
+        else:
+            return {"success": False, "message": "해당 템플릿을 찾을 수 없거나 수정되지 않았습니다."}
+    except Exception as e:
+        print(f"템플릿 수정 오류: {e}")
+        return {"success": False, "message": "서버 내부 오류가 발생했습니다."}
+
 
 @app.post("/send_birthday_message", response_class=HTMLResponse)
 async def send_birthday_message(
@@ -1141,3 +1207,22 @@ async def send_individual_birthday_sms(
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)})
+
+
+@app.post("/api/addtemplates")
+async def add_template(
+        template_data: TemplateCreate,
+        db: AsyncSession = Depends(get_db)
+):
+    try:
+        # DB에 템플릿 저장 (아래 3번의 함수 호출)
+        await funchub.create_template(db, template_data)
+
+        # 프론트엔드의 fetch .then(data => if(data.success)) 부분과 매칭됨
+        return {"success": True, "message": "템플릿이 성공적으로 등록되었습니다."}
+
+    except Exception as e:
+        print(f"템플릿 등록 오류: {e}")
+        return {"success": False, "message": "서버 내부 오류가 발생했습니다."}
+
+

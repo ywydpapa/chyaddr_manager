@@ -16,6 +16,13 @@ from passlib.exc import UnknownHashError
 import jwt
 import dotenv
 import re
+from pydantic import BaseModel
+from typing import Optional
+from models import ChyTemplate
+from sqlalchemy.future import select
+from fastapi import HTTPException
+from sqlalchemy import update
+
 
 dotenv.load_dotenv()
 
@@ -31,6 +38,20 @@ _PBKDF2_ITERATIONS = 210_000
 _PBKDF2_SALT_BYTES = 16
 _PBKDF2_KEY_BYTES = 32
 
+
+class TemplateCreate(BaseModel):
+    tempTitle: str
+    tempType: str
+    tempBg: Optional[str] = None
+    tempFr: Optional[str] = None
+    tempContents: str
+
+class TemplateUpdate(BaseModel):
+    tempTitle: str
+    tempType: str
+    tempBg: Optional[str] = None
+    tempFr: Optional[str] = None
+    tempContents: str
 
 def get_password_hash(password: str):
     if not isinstance(password, str):
@@ -386,13 +407,83 @@ async def get_apireserv(db: AsyncSession):
         raise HTTPException(status_code=500, detail="Database query failed(EVENT_LIST)")
 
 
+async def get_templist(db: AsyncSession):
+    try:
+        query = text("select * from chyTemplates where attrib not like :attpatt")
+        result = await db.execute(query, {"attpatt": "%XXX%"})
+        temp_list = result.fetchall()
+        return temp_list
+    except:
+        raise HTTPException(status_code=500, detail="Database query failed(TEMPLATES_LIST)")
+
+
+async def get_template(db: AsyncSession, tempno: int):
+    try:
+        # ORM을 이용한 쿼리 생성
+        query = select(ChyTemplate).where(ChyTemplate.tempNo == tempno)
+        result = await db.execute(query)
+
+        # scalars().first()를 사용하면 ORM 객체 1개를 바로 반환 (없으면 None)
+        template = result.scalars().first()
+
+        return template
+
+    except Exception as e:
+        # 에러 로그를 출력하여 디버깅을 용이하게 함
+        print(f"DB Error(get_template): {e}")
+        raise HTTPException(status_code=500, detail="Database query failed(TEMPLATE)")
+
+
+async def create_template(db: AsyncSession, template_data: TemplateCreate):
+    """
+    새로운 템플릿을 데이터베이스에 추가합니다.
+    """
+    # 프론트엔드에서 제거된 attrib 속성은 여기서 기본값으로 자동 생성/부여합니다.
+    default_attrib = "1000010000"
+
+    new_template = ChyTemplate(
+        tempTitle=template_data.tempTitle,
+        tempType=template_data.tempType,
+        tempBg=template_data.tempBg,
+        tempFr=template_data.tempFr,
+        tempContents=template_data.tempContents,
+        attrib=default_attrib
+        # regDate=datetime.now() # 모델에 default=func.now()가 설정되어 있다면 생략 가능
+    )
+
+    db.add(new_template)
+    await db.commit()
+    await db.refresh(new_template)
+
+    return new_template
+
+
+async def update_template(db: AsyncSession, tempno: int, template_data: TemplateUpdate):
+    """
+    기존 템플릿 정보를 업데이트합니다.
+    """
+    query = (
+        update(ChyTemplate)
+        .where(ChyTemplate.tempNo == tempno)
+        .values(
+            tempTitle=template_data.tempTitle,
+            tempType=template_data.tempType,
+            tempBg=template_data.tempBg,
+            tempFr=template_data.tempFr,
+            tempContents=template_data.tempContents
+            # modDate는 models.py에서 onupdate=func.now()를 설정했으므로 자동 갱신됩니다.
+        )
+    )
+
+    result = await db.execute(query)
+    await db.commit()
+
+    # rowcount가 0보다 크면 실제 업데이트된 행이 있다는 의미입니다.
+    return result.rowcount > 0
+
+
 async def get_upcoming_birthdays(db: AsyncSession, start_date_str: str, end_date_str: str):
-    """
-    :param db: AsyncSession 객체
-    :param start_date_str: 검색 시작일 (YYYY-MM-DD)
-    :param end_date_str: 검색 종료일 (YYYY-MM-DD)
-    :return: 생일자 딕셔너리 리스트
-    """
+
     try:
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()

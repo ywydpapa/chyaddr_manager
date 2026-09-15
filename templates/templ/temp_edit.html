@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>템플릿 수정</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+
+    <style>
+        /* CodeMirror 에디터 높이 설정 */
+        .CodeMirror {
+            height: 600px;
+            border-radius: 0.375rem;
+            font-family: 'D2Coding', 'Consolas', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+
+        <!-- 헤더 영역 -->
+        <div class="bg-gray-800 px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white">📝 템플릿 수정</h2>
+            <div>
+                <button type="button" onclick="history.back()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-medium transition mr-2">
+                    취소
+                </button>
+                <button type="button" onclick="saveTemplate()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold transition">
+                    수정하기
+                </button>
+            </div>
+        </div>
+
+        <!-- 폼 영역 -->
+        <div class="p-6">
+            <form id="templateForm" class="space-y-6">
+                <!-- DB의 tempNo (수정 시 기준이 되는 PK) -->
+                <input type="hidden" id="tempNo" name="tempNo" value="{{ template.tempNo }}">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 템플릿 제목 (tempTitle) -->
+                    <div class="md:col-span-2">
+                        <label for="tempTitle" class="block text-sm font-bold text-gray-700 mb-1">템플릿 제목 <span class="text-red-500">*</span></label>
+                        <input type="text" id="tempTitle" name="tempTitle" value="{{ template.tempTitle }}" placeholder="예: 충효예 대학 산악회 참석 안내"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- 템플릿 타입 (tempType) -->
+                    <div>
+                        <label for="tempType" class="block text-sm font-bold text-gray-700 mb-1">템플릿 타입</label>
+                        <select id="tempType" name="tempType" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="PRINT" {% if template.tempType == 'PRINT' %}selected{% endif %}>인쇄용 (A4)</option>
+                            <option value="SMS" {% if template.tempType == 'SMS' %}selected{% endif %}>문자발송용 (이미지)</option>
+                            <option value="EMAIL" {% if template.tempType == 'EMAIL' %}selected{% endif %}>이메일용</option>
+                            <option value="ETC" {% if template.tempType == 'ETC' %}selected{% endif %}>기타</option>
+                        </select>
+                    </div>
+
+                    <!-- 배경 이미지 (tempBg) -->
+                    <div>
+                        <label for="tempBg" class="block text-sm font-bold text-gray-700 mb-1">배경 이미지 경로 (tempBg)</label>
+                        <input type="text" id="tempBg" name="tempBg" value="{{ template.tempBg | default('') }}" placeholder="/static/img/bg-default.jpg"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- 프레임 이미지 (tempFr) -->
+                    <div class="md:col-span-2">
+                        <label for="tempFr" class="block text-sm font-bold text-gray-700 mb-1">프레임 이미지 경로 (tempFr)</label>
+                        <input type="text" id="tempFr" name="tempFr" value="{{ template.tempFr | default('') }}" placeholder="/static/img/frame-default.png"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- 템플릿 내용 (tempContents) -->
+                <div class="mt-6">
+                    <div class="flex justify-between items-end mb-2">
+                        <label for="tempContents" class="block text-sm font-bold text-gray-700">템플릿 내용 (HTML & Jinja/Nunjucks)</label>
+                        <span class="text-xs text-gray-500">※ {% raw %}{{ 변수명 }}{% endraw %} 및 {% raw %}{% for %}{% endraw %} 문법을 사용할 수 있습니다.</span>
+                    </div>
+                    <div class="border border-gray-300 rounded-md overflow-hidden">
+                        <!-- textarea 내부에 DB 데이터를 바로 출력하면 CodeMirror가 이를 읽어들입니다. -->
+                        <textarea id="tempContents" name="tempContents">{{ template.tempContents }}</textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+
+<script>
+    // CodeMirror 에디터 초기화
+    let editor;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // textarea에 이미 DB에서 불러온 HTML이 들어있으므로, fromTextArea 호출 시 자동으로 에디터에 세팅됩니다.
+        editor = CodeMirror.fromTextArea(document.getElementById("tempContents"), {
+            mode: "htmlmixed",
+            theme: "dracula",
+            lineNumbers: true,
+            autoCloseTags: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true
+        });
+    });
+
+    // 저장(수정) 함수
+    function saveTemplate() {
+        // CodeMirror의 내용을 textarea에 동기화
+        editor.save();
+
+        const tempNo = document.getElementById('tempNo').value;
+        const tempTitle = document.getElementById('tempTitle').value;
+        const tempType = document.getElementById('tempType').value;
+        const tempBg = document.getElementById('tempBg').value;
+        const tempFr = document.getElementById('tempFr').value;
+        const tempContents = document.getElementById('tempContents').value;
+
+        if (!tempTitle.trim()) {
+            alert("템플릿 제목을 입력해주세요.");
+            document.getElementById('tempTitle').focus();
+            return;
+        }
+
+        if (!tempContents.trim()) {
+            alert("템플릿 내용을 입력해주세요.");
+            return;
+        }
+
+        const requestData = {
+            tempNo: parseInt(tempNo),
+            tempTitle: tempTitle,
+            tempType: tempType,
+            tempBg: tempBg,
+            tempFr: tempFr,
+            tempContents: tempContents
+        };
+
+        console.log("서버로 전송할 수정 데이터:", requestData);
+        // 서버 수정 API 호출 (예: /api/edittemplates)
+        fetch(`/updateTemp/${tempNo}`, {
+            method: 'POST', // RESTful 원칙에 따라 PUT을 사용하셔도 됩니다.
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                alert('템플릿이 성공적으로 수정되었습니다.');
+                location.href = '/tempList'; // 목록 페이지로 이동
+            } else {
+                alert('수정 실패: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('서버 통신 중 오류가 발생했습니다.');
+        });
+    }
+</script>
+</body>
+</html>
