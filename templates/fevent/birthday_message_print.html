@@ -3,189 +3,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>생일 축하 서신 (일괄 출력)</title>
+<title>생일 축하 서신 (선택 이미지 전송)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-    /* 🖨️ 상단 출력 버튼 영역 */
+    /* 상단 버튼 영역 */
     .print-btn-container {
-        width: 100%;
-        background-color: #333;
-        padding: 15px 0;
-        text-align: center;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        width: 100%; background-color: #333; padding: 15px 0; text-align: center;
+        position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .print-btn {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 10px 30px;
-        font-size: 16pt;
-        font-weight: bold;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
+        background-color: #28a745; color: white; border: none; padding: 10px 30px;
+        font-size: 16pt; font-weight: bold; border-radius: 5px; cursor: pointer;
     }
-    .print-btn:hover {
-        background-color: #0056b3;
-    }
+    .print-btn:hover { background-color: #218838; }
 
-    /* 기본 설정 (화면용) */
-    body {
-        margin: 0;
-        padding: 0;
-        background-color: #f0f0f0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-family: 'Batang', '바탕', serif; /* 축하 서신에 어울리는 명조체 계열 */
-        color: #111;
+    /* 로딩 오버레이 */
+    #loading-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); color: white; z-index: 2000;
+        flex-direction: column; justify-content: center; align-items: center;
     }
+    #loading-text { font-size: 24pt; font-weight: bold; margin-bottom: 20px; }
 
-    /* A4 페이지 기본 스타일 */
-    .a4-page {
-        width: 210mm;
-        height: 297mm;
-        padding: 25mm 20mm;
-        background-color: white;
-        box-sizing: border-box;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        position: relative;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center; /* 수직 중앙 정렬 */
-        overflow: hidden;
-    }
+    /* 기본 설정 */
+    body { margin: 0; padding: 0; background-color: #f0f0f0; display: flex; flex-direction: column; align-items: center; font-family: 'Batang', '바탕', serif; color: #111; }
 
-    /* 테두리 장식 (선택 사항 - 고급스러운 느낌 부여) */
-    .border-box {
-        border: 3px double #d4af37; /* 금색 느낌의 이중 테두리 */
-        padding: 40px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-sizing: border-box;
+    /* 개별 페이지 래퍼 및 컨트롤 박스 (캡처 영역 제외) */
+    .page-wrapper { margin-top: 20px; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; }
+    .page-controls {
+        width: 210mm; background-color: #fff; padding: 15px 20px; margin-bottom: 10px;
+        border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: flex; justify-content: space-between; align-items: center;
+        box-sizing: border-box; font-family: 'Malgun Gothic', sans-serif;
     }
+    .page-controls label { font-size: 14pt; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .page-controls input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
 
-    /* 수신자 영역 */
-    .recipient {
-        font-size: 26pt;
-        font-weight: bold;
-        text-align: left;
-        margin-top: 30px;
-        line-height: 1.5;
-    }
-    .recipient .name {
-        font-size: 30pt;
-    }
+    /* 전송 상태 배지 */
+    .status-badge { padding: 5px 12px; border-radius: 4px; font-size: 12pt; font-weight: bold; }
+    .status-pending { background: #e9ecef; color: #495057; }
+    .status-success { background: #d4edda; color: #155724; }
+    .status-fail { background: #f8d7da; color: #721c24; }
 
-    /* 본문 메시지 영역 */
-    .message {
-        font-size: 32pt;
-        line-height: 1.8;
-        text-align: center;
-        word-break: keep-all;
-        margin: 60px 0;
-    }
-
-    /* 발신자 서명 영역 */
-    .sender-area {
-        text-align: right;
-        margin-bottom: 30px;
-        position: relative;
-    }
-    .sender-text {
-        font-size: 28pt;
-        font-weight: bold;
-        letter-spacing: 2px;
-        position: relative;
-        display: inline-block;
-        padding-right: 20px;
-    }
-    .main-stamp-img {
-        position: absolute;
-        right: -60px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 90px;
-        height: 90px;
-        mix-blend-mode: multiply;
-        pointer-events: none;
-    }
-
-    /* 🖨️ 실제 인쇄 시 적용되는 설정 */
-    @media print {
-        @page {
-            size: A4;
-            margin: 0;
-        }
-        html, body {
-            width: 100%;
-            height: auto;
-            background-color: white;
-            margin: 0;
-            padding: 0;
-            display: block;
-        }
-        .print-btn-container { display: none !important; }
-
-        .a4-page {
-            box-shadow: none;
-            margin: 0;
-            padding: 15mm;
-            width: 210mm;
-            height: 297mm;
-            box-sizing: border-box;
-            page-break-after: always;
-            page-break-inside: avoid;
-        }
-
-        .a4-page:last-of-type {
-            page-break-after: auto;
-        }
-    }
+    /* A4 페이지 기본 스타일 (캡처되는 영역) */
+    .a4-page { width: 210mm; height: 297mm; padding: 25mm 20mm; background-color: white; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+    .border-box { border: 3px double #d4af37; padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
+    .recipient { font-size: 26pt; font-weight: bold; text-align: left; margin-top: 30px; line-height: 1.5; }
+    .recipient .name { font-size: 30pt; }
+    .message { font-size: 32pt; line-height: 1.8; text-align: center; word-break: keep-all; margin: 60px 0; }
+    .sender-area { text-align: right; margin-bottom: 30px; position: relative; }
+    .sender-text { font-size: 28pt; font-weight: bold; letter-spacing: 2px; position: relative; display: inline-block; padding-right: 20px; }
+    .main-stamp-img { position: absolute; right: -60px; top: 50%; transform: translateY(-50%); width: 90px; height: 90px; mix-blend-mode: multiply; pointer-events: none; }
 </style>
 </head>
 <body>
 
-<!-- 상단 출력 버튼 -->
+<!-- 상단 전송 버튼 -->
 <div class="print-btn-container">
-    <button class="print-btn" onclick="window.print()">🖨️ 인쇄하기</button>
+    <button class="print-btn" onclick="convertAndSendSMS()">📱 선택된 항목만 문자 전송하기</button>
+</div>
+
+<!-- 로딩 화면 -->
+<div id="loading-overlay">
+    <div id="loading-text">전송 준비 중...</div>
+    <progress id="progress-bar" value="0" max="100" style="width: 300px; height: 30px;"></progress>
 </div>
 
 {% for member in members %}
-<div class="a4-page">
-    <div class="border-box">
+<div class="page-wrapper">
+    <!-- 전송 선택 컨트롤 (이미지 캡처 시 제외됨) -->
+    <div class="page-controls" data-html2canvas-ignore="true">
+        <label>
+            <input type="checkbox" class="send-checkbox" checked>
+            <span>{{ member.memberName }}님 서신 전송하기</span>
+        </label>
+        <span class="status-badge status-pending">대기 중</span>
+    </div>
 
-        <!-- 상단 수신자 -->
-        <div class="recipient">
-            <span class="name">{{ member.memberName }}</span>
-            <!-- 상호(compName)가 없으면 memberMemo를 출력하도록 Fallback 설정 -->
-            {{ member.memberJobtitle | default(member.memberMemo) }}님,
-        </div>
-
-        <!-- 중앙 본문 -->
-        <div class="message">
-            생신을 진심으로 축하드립니다.<br><br>
-            영원불멸한 충효예의 기운이 늘 함께하시어<br>
-            가정에 행복과 행운이 가득하시길 기원드립니다.
-        </div>
-
-        <!-- 하단 발신자 -->
-        <div class="sender-area">
-            <div class="sender-text">
-                社團法人 忠孝禮 大學 理事長 柳 震 壽
-                <img src="/static/img/stamp/mainstamp.png" alt="직인" class="main-stamp-img">
+    <!-- 실제 캡처될 A4 영역 -->
+    <div class="a4-page" data-name="{{ member.memberName }}" data-phone="{{ member.memberPhone }}">
+        <div class="border-box">
+            <div class="recipient">
+                <span class="name">{{ member.memberName }}</span>
+                {{ member.memberJobtitle | default(member.rankTitlekor) }} 님,
+            </div>
+            <div class="message">
+                생신을 진심으로 축하드립니다.<br><br>
+                영원불멸한 충효예의 기운이 늘 함께하시어<br>
+                가정에 행복과 행운이 가득하시길 기원드립니다.
+            </div>
+            <div class="sender-area">
+                <div class="sender-text">
+                    社團法人 忠孝禮 大學 理事長 柳 震 壽
+                    <img src="/static/img/stamp/mainstamp.png" alt="직인" class="main-stamp-img">
+                </div>
             </div>
         </div>
-
     </div>
 </div>
 {% endfor %}
 
+<script>
+    async function convertAndSendSMS() {
+        // 체크박스가 선택된 래퍼(wrapper)만 필터링
+        const wrappers = Array.from(document.querySelectorAll('.page-wrapper'));
+        const selectedWrappers = wrappers.filter(w => w.querySelector('.send-checkbox').checked);
+
+        if (selectedWrappers.length === 0) {
+            alert("전송할 대상을 1명 이상 선택해주세요.");
+            return;
+        }
+
+        if (!confirm(`선택된 ${selectedWrappers.length}명에게 개별 이미지를 생성하여 문자를 발송하시겠습니까?`)) {
+            return;
+        }
+
+        // 폰트 렌더링 대기 (이미지 깨짐 방지)
+        await document.fonts.ready;
+
+        const overlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        const progressBar = document.getElementById('progress-bar');
+
+        overlay.style.display = 'flex';
+        progressBar.max = selectedWrappers.length;
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < selectedWrappers.length; i++) {
+            const wrapper = selectedWrappers[i];
+            const page = wrapper.querySelector('.a4-page');
+            const statusBadge = wrapper.querySelector('.status-badge');
+
+            const name = page.getAttribute('data-name');
+            const phone = page.getAttribute('data-phone');
+
+            loadingText.innerText = `[${i + 1} / ${selectedWrappers.length}] ${name}님 처리 중...`;
+            statusBadge.className = 'status-badge status-pending';
+            statusBadge.innerText = '전송 중...';
+
+            try {
+                // 1. HTML을 Canvas로 변환 (A4 영역만 캡처)
+                const canvas = await html2canvas(page, { scale: 1.5, useCORS: true });
+
+                // 2. Canvas를 Blob(이미지 파일)으로 변환
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+
+                // 3. 폼 데이터 생성
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('phone', phone);
+                formData.append('image', blob, `birthday_${name}.jpg`);
+
+                // 4. 백엔드로 전송
+                const response = await fetch('/api/send-individual-birthday-sms', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    successCount++;
+                    statusBadge.className = 'status-badge status-success';
+                    statusBadge.innerText = '전송 성공';
+                    // 성공한 항목은 체크박스 해제 (중복 발송 방지)
+                    wrapper.querySelector('.send-checkbox').checked = false;
+                } else {
+                    console.error(`${name}님 전송 실패:`, result.error);
+                    failCount++;
+                    statusBadge.className = 'status-badge status-fail';
+                    statusBadge.innerText = '전송 실패';
+                }
+            } catch (error) {
+                console.error(`${name}님 처리 중 에러:`, error);
+                failCount++;
+                statusBadge.className = 'status-badge status-fail';
+                statusBadge.innerText = '에러 발생';
+            }
+
+            progressBar.value = i + 1;
+        }
+
+        overlay.style.display = 'none';
+        alert(`전송 완료!\n성공: ${successCount}명\n실패: ${failCount}명\n(실패한 항목은 화면에서 확인 후 다시 시도할 수 있습니다.)`);
+    }
+</script>
 </body>
 </html>

@@ -29,6 +29,9 @@ from typing import Optional
 import phapp
 from routers import board
 import shutil
+from pydantic import BaseModel
+from typing import List
+import requests
 
 dotenv.load_dotenv()
 
@@ -72,7 +75,19 @@ EXT_BY_CONTENT_TYPE = {
     "image/png": ".png",
     "image/webp": ".webp",
 }
+
+api_key = os.getenv('smsapi')  # .env 파일에서 로드
+smsid = os.getenv('smsid')
+smssender = os.getenv('smssender')
+
 security = HTTPBearer()
+
+class SMSMember(BaseModel):
+    name: str
+    phone: str
+
+class SMSRequest(BaseModel):
+    members: List[SMSMember]
 
 
 async def get_db():
@@ -1034,9 +1049,11 @@ async def send_birthday_message(
                 FROM chyClassmember cm 
                 JOIN chyRank r ON cm.classRank = r.rankNo 
                 WHERE cm.memberNo = m.memberNo LIMIT 1) as rankTitlekor,
-                mi.infoContents as memberJobtitle
+                mi.infoContents as memberJobtitle, 
+                mi2.infoContents as memberPhone
         FROM chyMember m
         LEFT JOIN chyMemberInfo mi ON mi.memberNo = m.memberNo and mi.catNo = 11 and mi.attrib not like '%XXX%' 
+        LEFT JOIN chyMemberInfo mi2 ON mi2.memberNo = m.memberNo and mi2.catNo = 1 and mi2.attrib not like '%XXX%'
         WHERE m.memberNo IN ({in_clause})
     """)
 
@@ -1050,6 +1067,7 @@ async def send_birthday_message(
             "memberName": row.memberName,
             "memberMemo": row.memberMemo,
             "memberJobtitle": row.memberJobtitle,
+            "memberPhone": row.memberPhone,
             "rankTitlekor": row.rankTitlekor or "원우"  # 직책이 없으면 '원우'로 기본값 설정
         })
 
@@ -1057,3 +1075,53 @@ async def send_birthday_message(
         name="fevent/birthday_message_print.html",
         context={"request": request, "members": members}
     )
+
+
+@app.post("/api/send-individual-birthday-sms")
+async def send_individual_birthday_sms(
+        name: str = Form(...),
+        phone: str = Form(...),
+        image: UploadFile = File(...)
+):
+    # 알리고 API 설정
+    send_url = 'https://apis.aligo.in/send/'
+    api_key = os.getenv('smsapi')  # .env 파일에서 로드
+
+    # 전화번호 하이픈 제거
+    receiver_phone = phone.replace('-', '')
+
+    sms_data = {
+        'key': api_key,
+        'userid': smsid,  # TODO: 실제 알리고 사이트 아이디 입력
+        'sender': smssender,  # TODO: 사전에 등록된 발신번호 입력
+        'receiver': receiver_phone,
+        'msg': f'{name}님, 생신을 진심으로 축하드립니다.\n\n영원불멸한 충효예의 기운이 늘 함께하시어\n가정에 행복과 행운이 가득하시길 기원드립니다.',
+        'msg_type': 'MMS',
+        'title': '생일 축하 메시지'
+    }
+
+    try:
+        # 업로드된 이미지 메모리에서 읽기
+        img_bytes = await image.read()
+
+        # 알리고 API에 전송할 파일 형태 구성
+        files = {'image': (image.filename, img_bytes, image.content_type)}
+
+        # 알리고 API 호출
+        response = requests.post(send_url, data=sms_data, files=files)
+        result = response.json()
+
+        # 알리고 API 성공 코드는 '1'
+        if str(result.get('result_code')) == '1':
+            return {"success": True, "message": "전송 성공"}
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": result.get('message', '알리고 API 전송 실패')}
+            )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
