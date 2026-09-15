@@ -1094,7 +1094,7 @@ async def send_individual_birthday_sms(
         'userid': smsid,  # TODO: 실제 알리고 사이트 아이디 입력
         'sender': smssender,  # TODO: 사전에 등록된 발신번호 입력
         'receiver': receiver_phone,
-        'msg': f'{name} {jobtitle}님,\n\n생신을 진심으로 축하드립니다.\n\n영원불멸한 충효예의 기운이 늘 함께하시어\n가정에 행복과 행운이 가득하시길 기원드립니다.',
+        'msg': f'{name} {jobtitle}님,\n\n생신을 진심으로 축하드립니다.',
         'msg_type': 'MMS',
         'title': '생일 축하 메시지 (충효예 대학)'
     }
