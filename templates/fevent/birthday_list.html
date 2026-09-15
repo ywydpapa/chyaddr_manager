@@ -29,6 +29,10 @@
             align-items: center;
             padding: 2px 4px;
         }
+
+        /* ✅ [추가] 달력 날짜 칸에 마우스를 올렸을 때 클릭 가능함을 표시 */
+        .fc-daygrid-day-frame { cursor: pointer; transition: background-color 0.2s; }
+        .fc-daygrid-day-frame:hover { background-color: rgba(78, 115, 223, 0.05); }
     </style>
 </head>
 
@@ -46,13 +50,15 @@
                     <h4 class="h3 mb-0 text-gray-800">생일자 관리 (올해)</h4>
                     <!-- 일괄 메시지 발송 버튼 -->
                     <button class="btn btn-primary" id="btnSendMessage" role="button" style="flex: 0 0 auto;">
-                        <i class="fas fa-envelope fa-sm text-white-50"></i> 일괄 축하 메시지 발송
+                        <i class="fas fa-envelope fa-sm text-white-50"></i> 축하 메시지 발송
                     </button>
                 </div>
 
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary">생일자 목록</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">생일자 목록
+                            <small class="text-muted ml-2">(💡 달력 날짜 클릭: 일자 전체선택 / 더블클릭: 주간 전체선택)</small>
+                        </h6>
                         <div class="custom-control custom-switch">
                             <input type="checkbox" class="custom-control-input" id="viewToggle" checked>
                             <label class="custom-control-label" for="viewToggle">달력 보기</label>
@@ -133,6 +139,7 @@
 <script>
     var calendar;
     var selectedMembers = new Set();
+    var dateClickTimer = null; // ✅ [추가] 클릭/더블클릭 구분을 위한 타이머 변수
 
     var allEvents = [
         {% for b in birthday_list %}
@@ -154,10 +161,9 @@
     ];
 
     document.addEventListener("DOMContentLoaded", function () {
-        // 현재 연도 구하기
         var currentYear = new Date().getFullYear();
-
         var calendarEl = document.getElementById('calendar');
+
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'ko',
@@ -166,7 +172,6 @@
                 center: 'title',
                 right: 'dayGridMonth,dayGridWeek'
             },
-            // ★ 달력 이동 범위를 올해로 제한
             validRange: {
                 start: currentYear + '-01-01',
                 end: (currentYear + 1) + '-01-01'
@@ -195,6 +200,22 @@
 
                 if (confirm(memberName + "님의 상세 정보 페이지로 이동하시겠습니까?\n(원래 생일: " + origBirth + " [" + birthType + "])")) {
                     window.location.href = url;
+                }
+            },
+
+            // ✅ [추가] 날짜 칸 클릭 이벤트 (싱글/더블 클릭 처리)
+            dateClick: function(info) {
+                if (dateClickTimer) {
+                    // 타이머가 작동 중일 때 또 클릭이 들어오면 더블클릭으로 간주
+                    clearTimeout(dateClickTimer);
+                    dateClickTimer = null;
+                    toggleWeekSelection(info.date); // 주간 선택
+                } else {
+                    // 첫 클릭 시 250ms 대기 (더블클릭 여부 확인)
+                    dateClickTimer = setTimeout(function() {
+                        dateClickTimer = null;
+                        toggleDaySelection(info.dateStr); // 일간 선택
+                    }, 250);
                 }
             }
         });
@@ -270,6 +291,7 @@
             selectedMembers.delete(memberNo);
         }
         syncListCheckboxes();
+        calendar.render(); // 달력 체크박스 상태 즉시 반영
     };
 
     function syncListCheckboxes() {
@@ -284,6 +306,61 @@
         });
 
         document.getElementById('selectAllList').checked = (hasItems && allChecked);
+    }
+
+    // ✅ [추가] 특정 일자 생일자 전체 선택/해제 함수
+    function toggleDaySelection(dateStr) {
+        var events = calendar.getEvents();
+        // 해당 날짜의 이벤트만 필터링
+        var targetEvents = events.filter(e => e.startStr === dateStr);
+
+        if (targetEvents.length === 0) return; // 생일자가 없으면 무시
+
+        // 하나라도 선택 안 된게 있으면 '전체 선택', 모두 선택되어 있으면 '전체 해제'
+        var allSelected = targetEvents.every(e => selectedMembers.has(e.id));
+
+        targetEvents.forEach(e => {
+            if (allSelected) selectedMembers.delete(e.id);
+            else selectedMembers.add(e.id);
+        });
+
+        calendar.render();
+        syncListCheckboxes();
+    }
+
+    // ✅ [추가] 특정 주간(일~토) 생일자 전체 선택/해제 함수
+    function toggleWeekSelection(dateObj) {
+        var clickedDate = new Date(dateObj);
+        var dayOfWeek = clickedDate.getDay(); // 0(일) ~ 6(토)
+
+        // 클릭한 날짜가 속한 주의 일요일(시작일) 계산
+        var startOfWeek = new Date(clickedDate);
+        startOfWeek.setDate(clickedDate.getDate() - dayOfWeek);
+        startOfWeek.setHours(0,0,0,0);
+
+        // 클릭한 날짜가 속한 주의 토요일(종료일) 계산
+        var endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23,59,59,999);
+
+        var events = calendar.getEvents();
+        var targetEvents = events.filter(e => {
+            if (!e.start) return false;
+            var eventDate = new Date(e.start);
+            return eventDate >= startOfWeek && eventDate <= endOfWeek;
+        });
+
+        if (targetEvents.length === 0) return; // 해당 주간에 생일자가 없으면 무시
+
+        var allSelected = targetEvents.every(e => selectedMembers.has(e.id));
+
+        targetEvents.forEach(e => {
+            if (allSelected) selectedMembers.delete(e.id);
+            else selectedMembers.add(e.id);
+        });
+
+        calendar.render();
+        syncListCheckboxes();
     }
 </script>
 </body>

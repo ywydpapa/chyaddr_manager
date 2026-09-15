@@ -10,12 +10,17 @@
     .print-btn-container {
         width: 100%; background-color: #333; padding: 15px 0; text-align: center;
         position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        display: flex; justify-content: center; gap: 15px; /* 버튼 간격 추가 */
     }
     .print-btn {
-        background-color: #28a745; color: white; border: none; padding: 10px 30px;
+        color: white; border: none; padding: 10px 30px;
         font-size: 16pt; font-weight: bold; border-radius: 5px; cursor: pointer;
+        transition: background-color 0.2s;
     }
-    .print-btn:hover { background-color: #218838; }
+    .btn-immediate { background-color: #28a745; }
+    .btn-immediate:hover { background-color: #218838; }
+    .btn-reserve { background-color: #17a2b8; }
+    .btn-reserve:hover { background-color: #138496; }
 
     /* 로딩 오버레이 */
     #loading-overlay {
@@ -28,7 +33,7 @@
     /* 기본 설정 */
     body { margin: 0; padding: 0; background-color: #f0f0f0; display: flex; flex-direction: column; align-items: center; font-family: 'Batang', '바탕', serif; color: #111; }
 
-    /* 개별 페이지 래퍼 및 컨트롤 박스 (캡처 영역 제외) */
+    /* 개별 페이지 래퍼 및 컨트롤 박스 */
     .page-wrapper { margin-top: 20px; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; }
     .page-controls {
         width: 210mm; background-color: #fff; padding: 15px 20px; margin-bottom: 10px;
@@ -45,75 +50,25 @@
     .status-success { background: #d4edda; color: #155724; }
     .status-fail { background: #f8d7da; color: #721c24; }
 
-    /* A4 페이지 기본 스타일 (캡처되는 영역) */
+    /* A4 페이지 기본 스타일 */
     .a4-page { width: 210mm; height: 297mm; padding: 25mm 20mm; background-color: white; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        /* 배경 워터마크 로고 추가 */
-    .watermark-logo {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 400px; /* 로고 크기 (필요에 따라 조절하세요) */
-        opacity: 0.1; /* 흐릿한 정도 (0.1 ~ 0.2 정도가 적당합니다) */
-        z-index: 1;   /* 배경으로 배치 */
-        pointer-events: none; /* 마우스 클릭 방해 방지 */
-    }
-
-    /* 기존 border-box에 z-index 추가하여 텍스트가 로고 위로 오게 함 */
-    .border-box {
-        border: 3px double #d4af37;
-        padding: 40px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-sizing: border-box;
-        position: relative; /* 추가 */
-        z-index: 2;         /* 추가 (워터마크보다 위로) */
-    }
-
+    .watermark-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; opacity: 0.1; z-index: 1; pointer-events: none; }
+    .border-box { border: 3px double #d4af37; padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; position: relative; z-index: 2; }
     .message { font-size: 32pt; line-height: 1.8; text-align: center; word-break: keep-all; margin: 60px 0; }
-         /* 수신자 영역 (한 줄 고정 및 정렬) */
-    .recipient {
-        font-size: 26pt;
-        font-weight: bold;
-        text-align: left;
-        margin-top: 30px;
-        line-height: 1.5;
-        white-space: nowrap; /* 줄바꿈 방지 (필수) */
-        display: flex;
-        align-items: baseline;
-    }
-    .recipient .name {
-        font-size: 30pt;
-        margin-right: 10px; /* 이름과 직함 사이 띄어쓰기 간격 */
-    }
-    /* 발신자 영역 */
-        /* 발신자 영역 */
+    .recipient { font-size: 26pt; font-weight: bold; text-align: left; margin-top: 30px; line-height: 1.5; white-space: nowrap; display: flex; align-items: baseline; }
+    .recipient .name { font-size: 30pt; margin-right: 10px; }
     .sender-area { text-align: right; margin-bottom: 30px; position: relative; }
-    .sender-text {
-        letter-spacing: 2px;
-        position: relative;
-        display: inline-block;
-        padding-right: 20px;
-        text-align: right;
-    }
-    .sender-title {
-        font-size: 20pt; /* 직함 글씨 크기 유지 */
-        font-weight: bold;
-        margin-right: 15px; /* 이름과 띄어쓰기 간격 */
-    }
-    .sender-name {
-        font-size: 30pt; /* 이름 글씨 크기 유지 */
-        font-weight: bold; /* 이름 굵기 유지 */
-    }
+    .sender-text { letter-spacing: 2px; position: relative; display: inline-block; padding-right: 20px; text-align: right; }
+    .sender-title { font-size: 20pt; font-weight: bold; margin-right: 15px; }
+    .sender-name { font-size: 30pt; font-weight: bold; }
 </style>
 </head>
 <body>
 
-<!-- 상단 전송 버튼 -->
+<!-- ✅ [수정] 상단 전송 버튼 (즉시 발송 / 예약 발송 분리) -->
 <div class="print-btn-container">
-    <button class="print-btn" onclick="convertAndSendSMS()">📱 선택된 항목만 문자 전송하기</button>
+    <button class="print-btn btn-immediate" onclick="convertAndSendSMS('immediate')">📱 즉시 발송하기</button>
+    <button class="print-btn btn-reserve" onclick="convertAndSendSMS('reserve')">⏰ 생일 당일 예약 발송 (오전 9시)</button>
 </div>
 
 <!-- 로딩 화면 -->
@@ -124,7 +79,6 @@
 
 {% for member in members %}
 <div class="page-wrapper">
-    <!-- 전송 선택 컨트롤 (이미지 캡처 시 제외됨) -->
     <div class="page-controls" data-html2canvas-ignore="true">
         <label>
             <input type="checkbox" class="send-checkbox" checked>
@@ -133,9 +87,13 @@
         <span class="status-badge status-pending">대기 중</span>
     </div>
 
-        <!-- 실제 캡처될 A4 영역 -->
-        <!-- 실제 캡처될 A4 영역 -->
-    <div class="a4-page" data-name="{{ member.memberName }}" data-phone="{{ member.memberPhone }}" data-jobtitle="{{ member.memberJobtitle | default(member.rankTitlekor) }}">
+    <!-- ✅ [수정] data-date 속성 추가 (member.thisYearBirthday 등 백엔드에서 넘어오는 생일 날짜 변수 사용) -->
+    <div class="a4-page"
+         data-name="{{ member.memberName }}"
+         data-phone="{{ member.memberPhone }}"
+         data-jobtitle="{{ member.memberJobtitle | default(member.rankTitlekor) }}"
+         data-date="{{ member.thisYearBirthday }}">
+
         <img src="/static/img/chylogo-org.jpg" class="watermark-logo" alt="배경 로고">
         <div class="border-box">
             <div class="recipient">
@@ -149,7 +107,6 @@
             </div>
             <div class="sender-area">
                 <div class="sender-text">
-                    <!-- 직함과 이름을 분리하여 두 줄로 표현 -->
                     <span class="sender-title">社團法人 忠孝禮大學 理事長</span>
                     <span class="sender-name">柳震壽</span>
                 </div>
@@ -162,38 +119,28 @@
 <script>
     function autoFitRecipientText() {
         const recipients = document.querySelectorAll('.recipient');
-
         recipients.forEach(recipient => {
             const nameSpan = recipient.querySelector('.name');
-
-            // 부모 요소(.border-box)의 너비에서 양쪽 패딩(40px * 2 = 80px)을 뺀 최대 허용 너비
             const maxWidth = recipient.parentElement.clientWidth - 80;
-
-            // 기본 폰트 크기 설정
             let baseFontSize = 26;
             let nameFontSize = 30;
 
-            // 초기화
             recipient.style.fontSize = baseFontSize + 'pt';
             if (nameSpan) nameSpan.style.fontSize = nameFontSize + 'pt';
 
-            // 글자 너비(scrollWidth)가 허용 너비(maxWidth)보다 크면 폰트 크기를 0.5pt씩 줄임
             while (recipient.scrollWidth > maxWidth && baseFontSize > 10) {
                 baseFontSize -= 0.5;
                 nameFontSize -= 0.5;
-
                 recipient.style.fontSize = baseFontSize + 'pt';
                 if (nameSpan) nameSpan.style.fontSize = nameFontSize + 'pt';
             }
         });
     }
 
-    // 페이지 로드가 완료되면 자동으로 글자 크기 맞춤 실행
     window.addEventListener('load', autoFitRecipientText);
-    // --------------------------------------------------------
 
-    async function convertAndSendSMS() {
-        // 체크박스가 선택된 래퍼(wrapper)만 필터링
+    // ✅ [수정] sendType 매개변수 추가 ('immediate' 또는 'reserve')
+    async function convertAndSendSMS(sendType) {
         const wrappers = Array.from(document.querySelectorAll('.page-wrapper'));
         const selectedWrappers = wrappers.filter(w => w.querySelector('.send-checkbox').checked);
 
@@ -202,11 +149,16 @@
             return;
         }
 
-        if (!confirm(`선택된 ${selectedWrappers.length}명에게 개별 이미지를 생성하여 문자를 발송하시겠습니까?`)) {
+        // 발송 타입에 따른 확인 메시지 분기
+        const isReserve = (sendType === 'reserve');
+        const confirmMsg = isReserve
+            ? `선택된 ${selectedWrappers.length}명에게 생일 당일 오전 9시로 [예약 문자]를 발송하시겠습니까?`
+            : `선택된 ${selectedWrappers.length}명에게 지금 [즉시 문자]를 발송하시겠습니까?`;
+
+        if (!confirm(confirmMsg)) {
             return;
         }
 
-        // 폰트 렌더링 대기 (이미지 깨짐 방지)
         await document.fonts.ready;
 
         const overlay = document.getElementById('loading-overlay');
@@ -227,26 +179,30 @@
             const name = page.getAttribute('data-name');
             const phone = page.getAttribute('data-phone');
             const jobtitle = page.getAttribute('data-jobtitle');
+            const dateStr = page.getAttribute('data-date'); // 예: "2026-09-15"
 
             loadingText.innerText = `[${i + 1} / ${selectedWrappers.length}] ${name} ${jobtitle}님 처리 중...`;
             statusBadge.className = 'status-badge status-pending';
             statusBadge.innerText = '전송 중...';
 
             try {
-                // 1. HTML을 Canvas로 변환 (A4 영역만 캡처)
                 const canvas = await html2canvas(page, { scale: 1.5, useCORS: true });
-
-                // 2. Canvas를 Blob(이미지 파일)으로 변환
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
 
-                // 3. 폼 데이터 생성
                 const formData = new FormData();
                 formData.append('name', name);
                 formData.append('phone', phone);
                 formData.append('jobtitle', jobtitle);
                 formData.append('image', blob, `birthday_${name}.jpg`);
 
-                // 4. 백엔드로 전송
+                // ✅ [추가] 예약 발송일 경우 rdate, rtime 추가
+                if (isReserve && dateStr) {
+                    // "2026-09-15" 형식을 "20260915"로 변환
+                    const rdate = dateStr.replace(/-/g, '');
+                    formData.append('rdate', rdate);
+                    formData.append('rtime', '0900'); // 오전 9시 고정
+                }
+
                 const response = await fetch('/api/send-individual-birthday-sms', {
                     method: 'POST',
                     body: formData
@@ -257,8 +213,7 @@
                 if (response.ok && result.success) {
                     successCount++;
                     statusBadge.className = 'status-badge status-success';
-                    statusBadge.innerText = '전송 성공';
-                    // 성공한 항목은 체크박스 해제 (중복 발송 방지)
+                    statusBadge.innerText = isReserve ? '예약 성공' : '전송 성공';
                     wrapper.querySelector('.send-checkbox').checked = false;
                 } else {
                     console.error(`${name}님 전송 실패:`, result.error);
@@ -277,7 +232,7 @@
         }
 
         overlay.style.display = 'none';
-        alert(`전송 완료!\n성공: ${successCount}명\n실패: ${failCount}명\n(실패한 항목은 화면에서 확인 후 다시 시도할 수 있습니다.)`);
+        alert(`작업 완료!\n성공: ${successCount}명\n실패: ${failCount}명\n(실패한 항목은 화면에서 확인 후 다시 시도할 수 있습니다.)`);
     }
 </script>
 </body>

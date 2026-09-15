@@ -1060,6 +1060,18 @@ async def send_birthday_message(
     result = await db.execute(query)
     rows = result.fetchall()
 
+    # ✅ [추가] 프론트엔드에 'thisYearBirthday'를 넘겨주기 위해 생일 데이터를 다시 조회하여 매핑
+    current_year = date.today().year
+    birthdays = await funchub.get_upcoming_birthdays(db, f"{current_year}-01-01", f"{current_year}-12-31")
+
+    birthday_map = {}
+    for b in birthdays:
+        # dict 형태인지 object 형태인지 확인하여 안전하게 매핑
+        m_no = b.get('memberNo') if isinstance(b, dict) else getattr(b, 'memberNo', None)
+        b_date = b.get('thisYearBirthday') if isinstance(b, dict) else getattr(b, 'thisYearBirthday', '')
+        if m_no:
+            birthday_map[m_no] = b_date
+
     members = []
     for row in rows:
         members.append({
@@ -1068,7 +1080,8 @@ async def send_birthday_message(
             "memberMemo": row.memberMemo,
             "memberJobtitle": row.memberJobtitle,
             "memberPhone": row.memberPhone,
-            "rankTitlekor": row.rankTitlekor or "원우"  # 직책이 없으면 '원우'로 기본값 설정
+            "rankTitlekor": row.rankTitlekor or "원우",
+            "thisYearBirthday": birthday_map.get(row.memberNo, "")  # ✅ [추가] 생일 날짜 추가
         })
 
     return templates.TemplateResponse(
@@ -1082,11 +1095,14 @@ async def send_individual_birthday_sms(
         name: str = Form(...),
         jobtitle: str = Form(...),
         phone: str = Form(...),
-        image: UploadFile = File(...)
+        image: UploadFile = File(...),
+        rdate: Optional[str] = Form(None),  # ✅ [추가] 예약 날짜 (선택적)
+        rtime: Optional[str] = Form(None)  # ✅ [추가] 예약 시간 (선택적)
 ):
     # 알리고 API 설정
     send_url = 'https://apis.aligo.in/send/'
     api_key = os.getenv('smsapi')  # .env 파일에서 로드
+
     # 전화번호 하이픈 제거
     receiver_phone = phone.replace('-', '')
     sms_data = {
@@ -1098,6 +1114,12 @@ async def send_individual_birthday_sms(
         'msg_type': 'MMS',
         'title': '생일 축하 메시지 (충효예 대학)'
     }
+
+    # ✅ [추가] 예약 발송 데이터가 넘어왔을 경우 sms_data에 추가
+    if rdate and rtime:
+        sms_data['rdate'] = rdate
+        sms_data['rtime'] = rtime
+
     try:
         # 업로드된 이미지 메모리에서 읽기
         img_bytes = await image.read()
@@ -1106,6 +1128,7 @@ async def send_individual_birthday_sms(
         # 알리고 API 호출
         response = requests.post(send_url, data=sms_data, files=files)
         result = response.json()
+
         # 알리고 API 성공 코드는 '1'
         if str(result.get('result_code')) == '1':
             return {"success": True, "message": "전송 성공"}
