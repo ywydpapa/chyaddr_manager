@@ -1061,8 +1061,8 @@ async def manage_ephoto(request: Request, db: AsyncSession = Depends(get_db)):
 
 @app.get("/manage_gstbook", response_class=HTMLResponse)
 async def manage_gstbook(request: Request, db: AsyncSession = Depends(get_db)):
-
-    return templates.TemplateResponse("manage/manage_gstbook.html", {"request": request})
+    events = await get_gstbook_photos(db)
+    return templates.TemplateResponse("manage/manage_gstbook.html", {"request": request, "events": events})
 
 
 @app.get("/api/ephoto/events")
