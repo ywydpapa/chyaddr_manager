@@ -1080,14 +1080,12 @@ async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
                 continue
     if not event_nos:
         return JSONResponse([])
-    query = text("""
-                 SELECT a.reservNo, a.reservFrom, b.circleName, c.clubName
-                 FROM voteReserv a
-                          LEFT JOIN lionsCircle b ON a.circleNo = b.circleNo
-                          LEFT JOIN lionsClub c ON a.clubNo = c.clubNo
-                 WHERE a.reservNo IN :event_nos
-                 ORDER BY a.reservFrom DESC
-                 """)
+    query = text(f"""
+                     SELECT a.eventNo, a.eventFrom, a.eventTitle
+                     FROM chyEvent a 
+                     WHERE a.eventNo IN ({tuple(event_nos)})
+                     ORDER BY a.eventFrom DESC
+                     """)
     result = await db.execute(query, {"event_nos": tuple(event_nos)})
     rows = result.fetchall()
     events = []
