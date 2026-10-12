@@ -1038,7 +1038,7 @@ async def get_ephoto_photos(event_no: int):
 
 
 @app.get("/api/gstbook/photos/{event_no}")
-async def get_gstbook_photos(event_no: int):
+async def get_gstbook_photosa(event_no: int):
     gstbook_dir = Path("static/img/gstbook")
     if not gstbook_dir.exists():
         return JSONResponse([])
@@ -1060,9 +1060,46 @@ async def manage_ephoto(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/manage_gstbook", response_class=HTMLResponse)
-async def manage_gstbook(request: Request, db: AsyncSession = Depends(get_db)):
-    events = await get_gstbook_photos(db)
+async def manage_gstbookf(request: Request, db: AsyncSession = Depends(get_db)):
+    events = await get_gstbook_events(db)
     return templates.TemplateResponse("manage/manage_gstbook.html", {"request": request, "events": events})
+
+
+@app.get("/api/gstbook/events")
+async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
+    gstbook_dir = Path("static/img/gstbook")
+    if not gstbook_dir.exists():
+        return JSONResponse([])
+    event_nos = set()
+    for file in gstbook_dir.iterdir():
+        if file.is_file() and "-" in file.name:
+            try:
+                event_no = int(file.name.split("-")[2])
+                event_nos.add(event_no)
+            except ValueError:
+                continue
+    if not event_nos:
+        return JSONResponse([])
+    query = text("""
+                 SELECT a.reservNo, a.reservFrom, b.circleName, c.clubName
+                 FROM voteReserv a
+                          LEFT JOIN lionsCircle b ON a.circleNo = b.circleNo
+                          LEFT JOIN lionsClub c ON a.clubNo = c.clubNo
+                 WHERE a.reservNo IN :event_nos
+                 ORDER BY a.reservFrom DESC
+                 """)
+    result = await db.execute(query, {"event_nos": tuple(event_nos)})
+    rows = result.fetchall()
+    events = []
+    for row in rows:
+        dt = row[1]
+        dt_str = dt.strftime("%Y-%m-%d %H:%M") if hasattr(dt, "strftime") else str(dt)
+        name = row[2] or row[3] or "알 수 없음"
+        events.append({
+            "reservNo": row[0],
+            "label": f"[{dt_str}] {name} (예약번호: {row[0]})"
+        })
+    return JSONResponse(events)
 
 
 @app.get("/api/ephoto/events")
