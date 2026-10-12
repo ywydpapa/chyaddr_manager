@@ -1038,7 +1038,7 @@ async def get_ephoto_photos(event_no: int):
 
 
 @app.get("/api/gstbook/photos/{event_no}")
-async def get_gstbook_photosa(event_no: int):
+async def get_gstbook_photos(event_no: int):
     gstbook_dir = Path("static/img/gstbook")
     if not gstbook_dir.exists():
         return JSONResponse([])
