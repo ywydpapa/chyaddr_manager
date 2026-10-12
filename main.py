@@ -9,7 +9,7 @@ from fastapi import (
     Form,
     Response,
     HTTPException,
-    Body,File, UploadFile
+    Body,File, UploadFile, status
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -1051,6 +1051,62 @@ async def get_gstbook_photos(event_no: int):
             })
     photos.sort(key=lambda x: x["filename"])
     return JSONResponse(photos)
+
+
+@app.post("/api/gstbook/photos/{filename:path}/rotate")
+async def rotate_gstbook_photo(filename: str):
+    safe_filename = os.path.basename(filename)
+    file_path = GSTB_DIR / safe_filename
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"파일을 찾을 수 없습니다: {safe_filename}"
+        )
+
+    try:
+        with Image.open(file_path) as img:
+            rotated_img = img.rotate(-90, expand=True)
+            if img.format == "JPEG" and rotated_img.mode in ("RGBA", "P"):
+                rotated_img = rotated_img.convert("RGB")
+            rotated_img.save(file_path, format=img.format, quality=95)
+
+        return JSONResponse({
+            "success": True,
+            "filename": safe_filename,
+            "url": f"/static/img/gstbook/{safe_filename}?t={int(time.time())}"
+        })
+    except Exception as e:
+        print(f"[ERROR] 회전 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@app.delete("/api/gstbook/photos/{filename:path}")
+async def delete_gstbook_photo(filename: str):
+    safe_filename = os.path.basename(filename)
+    file_path = GSTB_DIR / safe_filename
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"삭제할 파일이 없습니다: {safe_filename}"
+        )
+
+    try:
+        file_path.unlink()
+        return JSONResponse({
+            "success": True,
+            "message": f"{safe_filename} 파일이 삭제되었습니다."
+        })
+    except Exception as e:
+        print(f"[ERROR] 삭제 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @app.get("/manage_ephoto", response_class=HTMLResponse)
