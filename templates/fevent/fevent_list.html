@@ -212,7 +212,6 @@
                 place: '{{ item.feventPlace }}',
                 type: '{{ item[2] }}',
                 member: '{{ item[1] }}',
-                // ★ 추가됨: 메모 데이터 (백엔드 변수명에 맞게 item.feventMemo 등으로 수정 필요할 수 있음)
                 memo: '{{ item.feventMemo if item.feventMemo else "" }}'
             },
             backgroundColor: '#1cc88a',

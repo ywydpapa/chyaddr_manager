@@ -60,6 +60,14 @@
 
                     <!-- 멤버 선택 드롭다운 및 출력 버튼 -->
                     <div class="form-inline">
+                        <!-- 1. 문서 선택 드롭다운 (필수) -->
+                            <select id="docSelect" class="form-control mr-2" required>
+                                 <option value="">-- 출력할 문서 선택 (필수) --</option>
+                                    {% for doc in docs %}
+                                        <!-- 백엔드 doc 객체의 필드명에 맞게 doc.docNo, doc.docTitle 등을 매핑하세요 -->
+                                    <option value="{{ doc.tempNo }}">{{ doc.tempTitle }}</option>
+                                    {% endfor %}
+                            </select>
                         <select id="memberSelect" class="form-control mr-2">
                             <!-- 전체 출력일 때는 메모 데이터를 비워둡니다 -->
                             <option value="all" data-membermemo="">전체 출력</option>
@@ -127,21 +135,29 @@
 
     // 2. 문서 출력 버튼 클릭 이벤트
     document.getElementById('printDocBtn').addEventListener('click', function() {
-        var selectedMember = document.getElementById('memberSelect').value;
-        var eventNo = {{eventno}};
-        var customMemo = document.getElementById('memberMemo').value;
+    var selectedDoc = document.getElementById('docSelect').value;
+    var selectedMember = document.getElementById('memberSelect').value;
+    var eventNo = {{ eventno }};
+    var customMemo = document.getElementById('memberMemo').value;
 
-        // 기본 URL 구성
-        var printUrl = `/print_document/${eventNo}?memberNo=${selectedMember}`;
+    // 1. 문서 선택 유효성 검사 (필수 항목)
+    if (!selectedDoc) {
+        alert('출력할 문서를 먼저 선택해주세요.');
+        document.getElementById('docSelect').focus();
+        return;
+    }
 
-        // 특정 회원을 선택했고, 텍스트 박스에 값이 있다면 파라미터로 추가
-        if (selectedMember !== 'all' && customMemo.trim() !== '') {
-            // encodeURIComponent를 사용하여 한글 깨짐 방지
-            printUrl += `&customMemo=${encodeURIComponent(customMemo)}`;
-        }
+    // 2. 요청 경로 구성 (/print_document/{eventno}/{docno})
+    var printUrl = `/print_document/${eventNo}/${selectedDoc}?memberNo=${selectedMember}`;
 
-        window.open(printUrl, '_blank');
-    });
+    // 3. 특정 회원 선택 및 메모 값 존재 시 쿼리 파라미터 추가
+    if (selectedMember !== 'all' && customMemo.trim() !== '') {
+        printUrl += `&customMemo=${encodeURIComponent(customMemo)}`;
+    }
+
+    // 새 창 열기
+    window.open(printUrl, '_blank');
+});
 </script>
 </body>
 </html>

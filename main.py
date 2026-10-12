@@ -32,6 +32,9 @@ import shutil
 from pydantic import BaseModel
 from typing import List
 import requests
+import asyncio
+
+
 
 dotenv.load_dotenv()
 
@@ -660,7 +663,8 @@ async def geteventmembers(request: Request, eventno: int, db: AsyncSession = Dep
 @app.get("/event_notice/{eventno}", response_class=JSONResponse)
 async def eventnotice(request: Request, eventno: int, db: AsyncSession = Depends(get_db)):
     rows = await funchub.get_eventmemberlist(db, eventno)
-    return templates.TemplateResponse(request=request, name="class/event_offcialdoc.html", context={"request": request, "eventno": eventno, "members": rows})
+    docs = await funchub.get_templist(db)
+    return templates.TemplateResponse(request=request, name="class/event_offcialdoc.html", context={"request": request, "eventno": eventno, "members": rows, "docs": docs})
 
 
 @app.get("/api/member/{memberno}/prize")
@@ -823,10 +827,11 @@ async def update_classmember_info(request: Request, db: AsyncSession = Depends(g
         return {"result": "error"}
 
 
-@app.get("/print_document/{eventno}")
+@app.get("/print_document/{eventno}/{docno}", response_class=HTMLResponse)
 async def print_documents(
         request: Request,
         eventno: int,
+        docno: int,
         memberNo: Optional[str] = "all",
         customMemo: Optional[str] = None,
         db: AsyncSession = Depends(get_db)
@@ -834,16 +839,94 @@ async def print_documents(
     raw_rows = await funchub.get_eventmemberlist(db, eventno)
     rows = [dict(row._mapping) for row in raw_rows]
 
+    # 1. DB에서 템플릿 조회
+    document = await funchub.get_template(db, docno)
+    if not document:
+        raise HTTPException(status_code=404, detail="템플릿 문서를 찾을 수 없습니다.")
+
+    # 2. 회원 필터링 및 메모 오버라이드
     if memberNo != "all":
         filtered_rows = [row for row in rows if str(row["memberNo"]) == str(memberNo)]
         if customMemo and filtered_rows:
             filtered_rows[0]["memberMemo"] = customMemo
         rows = filtered_rows
-    return templates.TemplateResponse(
-        name="templ/offdoc001.html",
-        context={"request": request, "eventno": eventno, "members": rows}
-    )
 
+    # 3. 각 회원의 chyMemberInfo 상세 정보(infoContents) 비동기 병합
+    async def fetch_and_merge_info(member_dict):
+        m_no = member_dict.get("memberNo")
+        if not m_no:
+            return member_dict
+
+        # 회원 상세정보 조회 (SELECT a.*, b.catTitle ...)
+        raw_infos = await funchub.get_memberinfo(int(m_no), db)
+        info_rows = [dict(r._mapping) for r in raw_infos]
+
+        # catTitle을 Key로, infoContents를 Value로 하는 맵 생성
+        info_map = {}
+        for item in info_rows:
+            cat_title = item.get("catTitle")
+            contents = item.get("infoContents") or ""
+            if cat_title:
+                info_map[cat_title.strip()] = contents.strip()
+
+        # 회원 딕셔너리에 매핑 데이터 보관
+        member_dict["info_map"] = info_map
+
+        # 자주 사용하는 필드들을 카테고리명(동의어 포함)에 맞춰 자동 추출
+        # 1. 연락처: '휴대폰번호' 키 추가
+        member_dict["memberHp"] = (
+                info_map.get("휴대폰번호")
+                or info_map.get("전화번호")
+                or info_map.get("휴대전화")
+                or info_map.get("핸드폰")
+                or info_map.get("연락처")
+                or "-"
+        )
+
+        # 2. 소속: '직장명칭' 키 추가
+        member_dict["memberAffiliation"] = (
+                info_map.get("직장명칭")
+                or info_map.get("소속")
+                or info_map.get("직장")
+                or info_map.get("회사")
+                or "-"
+        )
+
+        # 3. 직책: chyMember의 rankTitlekor를 우선 사용하고 없으면 info_map 조회
+        member_dict["memberPosition"] = (
+                member_dict.get("rankTitlekor")
+                or info_map.get("직책")
+                or info_map.get("직위")
+                or "-"
+        )
+
+        # 4. 주소: '자택주소' 우선 매핑
+        member_dict["memberAddress"] = (
+                info_map.get("자택주소")
+                or info_map.get("주소")
+                or info_map.get("직장주소")
+                or "-"
+        )
+
+        return member_dict
+
+    # 전체 회원의 상세 정보를 병렬로 비동기 조회
+    rows = await asyncio.gather(*(fetch_and_merge_info(row) for row in rows))
+    print(rows)
+
+    # 4. 템플릿 렌더링
+    template_html = getattr(document, "tempContents", None) or (
+        document.get("tempContents") if isinstance(document, dict) else "")
+
+    jinja_template = templates.env.from_string(template_html)
+    rendered_content = jinja_template.render({
+        "request": request,
+        "eventno": eventno,
+        "members": rows,
+        "document": document
+    })
+
+    return HTMLResponse(content=rendered_content)
 
 @app.post("/update_eventmember_info")
 async def update_eventmember_info(request: Request, db: AsyncSession = Depends(get_db)):
