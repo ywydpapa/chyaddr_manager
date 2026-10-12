@@ -1097,7 +1097,7 @@ async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
         dt_str = dt.strftime("%Y-%m-%d %H:%M") if hasattr(dt, "strftime") else str(dt)
         name = row[2] or row[3] or "알 수 없음"
         events.append({
-            "reservNo": row[0],
+            "eventNo": row[0],
             "label": f"[{dt_str}] {name} (예약번호: {row[0]})"
         })
     return JSONResponse(events)
