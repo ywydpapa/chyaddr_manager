@@ -1100,6 +1100,7 @@ async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
             "eventNo": row[0],
             "label": f"[{dt_str}] {name} (예약번호: {row[0]})"
         })
+    print(events)
     return JSONResponse(events)
 
 
