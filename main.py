@@ -1080,9 +1080,7 @@ async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
                 continue
     if not event_nos:
         return JSONResponse([])
-
     in_clause = ", ".join(str(n) for n in event_nos)
-
     query = text(f"""
                      SELECT a.eventNo, a.eventFrom, a.eventTitle
                      FROM chyEvent a 
@@ -1098,9 +1096,8 @@ async def get_gstbook_events(db: AsyncSession = Depends(get_db)):
         name = row[2] or row[3] or "알 수 없음"
         events.append({
             "eventNo": row[0],
-            "label": f"[{dt_str}] {name} (예약번호: {row[0]})"
+            "label": f"[{dt_str}] {name} (이벤트 번호: {row[0]})"
         })
-    print(events)
     return JSONResponse(events)
 
 

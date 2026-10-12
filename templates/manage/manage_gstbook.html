@@ -156,7 +156,7 @@
 
     async function loadEvents() {
         try {
-            const response = await fetch('/api/ephoto/events');
+            const response = await fetch('/api/gstbook/events');
             const events = await response.json();
             console.log("목록 불러오기 응답 데이터:", events);
             if (!Array.isArray(events)) {
@@ -190,7 +190,7 @@
         }
 
         try {
-            const response = await fetch(`/api/ephoto/photos/${eventNo}`);
+            const response = await fetch(`/api/gstbook/photos/${eventNo}`);
             const photos = await response.json();
 
             if (photos.length === 0) {
@@ -256,7 +256,7 @@
 
     async function rotatePhoto(filename) {
         try {
-            const response = await fetch(`/api/ephoto/photos/${filename}/rotate`, { method: 'POST' });
+            const response = await fetch(`/api/gstbook/photos/${filename}/rotate`, { method: 'POST' });
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById(`img-${filename}`).src = data.url;
@@ -279,7 +279,7 @@
         if (!confirm("정말로 이 사진을 삭제하시겠습니까? (복구할 수 없습니다)")) return;
 
         try {
-            const response = await fetch(`/api/ephoto/photos/${filename}`, { method: 'DELETE' });
+            const response = await fetch(`/api/gstbook/photos/${filename}`, { method: 'DELETE' });
             if (response.ok) {
                 document.getElementById(`card-${filename}`).closest('[class*="col-"]').remove();
                 if (document.getElementById('photoGrid').children.length === 0) {
